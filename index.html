@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ブルーナ・スタイル・カタログ</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Zen Maru Gothic (温かみのある丸ゴシック) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Vue.js 3 -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+  <style>
+    body {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      background-color: #FAF6EE; /* 温かみのあるオフホワイト */
+    }
+    /* ブルーナ特有の太い線の表現 */
+    .bruna-border {
+      border: 4px solid #3B2216; /* 深いブラウンの輪郭線 */
+    }
+    .bruna-border-t {
+      border-top: 4px solid #3B2216;
+    }
+    .bruna-border-b {
+      border-bottom: 4px solid #3B2216;
+    }
+    /* 絵本風の立体感（ネオ・ブルータリズム風のフラットシャドウ） */
+    .bruna-shadow {
+      box-shadow: 6px 6px 0px 0px #3B2216;
+    }
+    .bruna-shadow-sm {
+      box-shadow: 4px 4px 0px 0px #3B2216;
+    }
+    .bruna-shadow-active:active {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0px 0px #3B2216;
+    }
+  </style>
+</head>
+<body class="text-[#3B2216] selection:bg-[#FFCD00]">
+
+  <div id="app" class="min-h-screen flex flex-col pb-24">
+    
+    <!-- ヘッダー（ブルーナ・イエローの帯） -->
+    <header class="bg-[#FFCD00] bruna-border-b py-6 px-4 text-center sticky top-0 z-10 shadow-sm">
+      <div class="max-w-4xl mx-auto flex justify-between items-center">
+        <!-- ダミーの空白（バランス用） -->
+        <div class="w-10"></div>
+        
+        <div>
+          <h1 class="text-2xl md:text-3xl font-black tracking-wider flex items-center justify-center gap-2">
+            <!-- シンプルなうさぎ風SVGアイコン -->
+            <svg class="w-8 h-8 inline-block" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M35 15C35 7 43 7 43 15V45H35V15Z" fill="#FFFFFF" stroke="#3B2216" stroke-width="8" stroke-linejoin="round"/>
+              <path d="M57 15C57 7 65 7 65 15V45H57V15Z" fill="#FFFFFF" stroke="#3B2216" stroke-width="8" stroke-linejoin="round"/>
+              <path d="M25 45C25 35 75 35 75 45V75C75 85 25 85 25 75V45Z" fill="#FFFFFF" stroke="#3B2216" stroke-width="8" stroke-linejoin="round"/>
+              <circle cx="42" cy="55" r="4" fill="#3B2216"/>
+              <circle cx="58" cy="55" r="4" fill="#3B2216"/>
+              <path d="M47 64L53 70M53 64L47 70" stroke="#3B2216" stroke-width="5" stroke-linecap="round"/>
+            </svg>
+            ブルーナ・マーケット
+          </h1>
+          <p class="text-xs md:text-sm font-bold mt-1 opacity-80">スプレッドシートから完全自動同期される注文システム</p>
+        </div>
+
+        <!-- 設定ボタン -->
+        <button @click="isConfigOpen = !isConfigOpen" class="w-10 h-10 bg-white bruna-border rounded-full flex items-center justify-center bruna-shadow-sm bruna-shadow-active hover:bg-[#FAF6EE] transition-colors" title="接続設定">
+          <i data-lucide="settings" class="w-5 h-5 text-[#3B2216]"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="flex-grow max-w-4xl w-full mx-auto px-4 py-8">
+      
+      <!-- GAS連携やスプシURLの設定パネル -->
+      <transition enter-active-class="transition ease-out duration-200" enter-from-class="transform opacity-0 -translate-y-4" enter-to-class="transform opacity-100 translate-y-0" leave-active-class="transition ease-in duration-150" leave-from-class="transform opacity-100 translate-y-0" leave-to-class="transform opacity-0 -translate-y-4">
+        <div v-if="isConfigOpen" class="bg-white bruna-border rounded-2xl p-6 mb-8 bruna-shadow bg-[#FAF6EE]">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-black text-lg flex items-center gap-2">
+              <i data-lucide="sliders" class="w-5 h-5 text-[#0051A2]"></i>
+              システム接続設定 (管理者向け)
+            </h3>
+            <button @click="isConfigOpen = false" class="text-gray-500 hover:text-black">
+              <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+          </div>
+          
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-bold mb-1 text-[#3B2216]">Googleスプレッドシート 共有URL</label>
+              <input type="text" v-model="tempSpreadsheetUrl" placeholder="URLを入力" class="w-full px-3 py-2 bruna-border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0051A2] text-sm font-bold">
+              <p class="text-xs text-gray-600 mt-1">
+                ※通常の「リンクを知っている全員が閲覧可能」に設定されたスプレッドシートの閲覧用URL（edit?usp=sharing など）をそのまま貼り付けられます。
+              </p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-bold mb-1 text-[#3B2216]">送信先注文用メールアドレス</label>
+              <input type="email" v-model="tempEmailDestination" placeholder="example@gmail.com" class="w-full px-3 py-2 bruna-border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0051A2] text-sm font-bold">
+              <p class="text-xs text-gray-600 mt-1">
+                ※デフォルトで <strong>takeonec1@gmail.com</strong> に送信されるよう設定してあります。
+              </p>
+            </div>
+
+            <div class="flex gap-2 pt-2">
+              <button @click="saveSettings" class="bg-[#008940] text-white px-4 py-2 rounded-lg font-bold bruna-border bruna-shadow-sm bruna-shadow-active text-sm">
+                設定を保存してリロード
+              </button>
+              <button @click="resetSettings" class="bg-white text-gray-700 px-4 py-2 rounded-lg font-bold bruna-border bruna-shadow-sm bruna-shadow-active text-sm">
+                初期の接続設定に戻す
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+
+      <!-- ローディング表示 -->
+      <div v-if="isLoading" class="text-center py-20">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-[#3B2216] border-t-[#FFCD00] mb-4"></div>
+        <p class="font-bold text-[#3B2216] text-lg">スプレッドシートから最新データをフェッチ中...</p>
+      </div>
+
+      <!-- エラー表示 -->
+      <div v-else-if="error" class="bg-[#E32915] text-white bruna-border rounded-2xl p-6 mb-8 bruna-shadow">
+        <h3 class="font-black text-lg mb-2 flex items-center gap-2">
+          <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+          データの読み込みに失敗しました
+        </h3>
+        <p class="text-sm opacity-95 mb-4">{{ error }}</p>
+        <p class="text-xs opacity-90 mb-4">※Googleスプレッドシートの共有設定が「リンクを知っている全員：閲覧者」になっていることをご確認ください。</p>
+        <div class="flex gap-2">
+          <button @click="loadSpreadsheetData" class="bg-white text-[#E32915] px-4 py-2 rounded-lg font-bold bruna-border bruna-shadow-sm bruna-shadow-active text-sm">
+            もう一度試す
+          </button>
+          <button @click="isConfigOpen = true" class="bg-[#FFCD00] text-[#3B2216] px-4 py-2 rounded-lg font-bold bruna-border bruna-shadow-sm bruna-shadow-active text-sm">
+            設定URLを確認する
+          </button>
+        </div>
+      </div>
+
+      <!-- 商品リスト（スプシのカラム構造にマッピング） -->
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div v-for="(product, index) in products" :key="index" 
+             class="bg-white bruna-border rounded-2xl overflow-hidden bruna-shadow flex flex-col justify-between transition-all duration-200"
+             :class="[getCardBgClass(index), product.stock === 0 ? 'opacity-70' : '']">
+          
+          <!-- 商品画像エリア（複数画像カルーセル対応） -->
+          <div class="relative bg-white bruna-border-b h-72 flex items-center justify-center overflow-hidden">
+            
+            <!-- カルーセルメイン画像 -->
+            <img v-if="product.images && product.images.length > 0 && product.images[product.current_image_index]" 
+                 :src="product.images[product.current_image_index]" 
+                 :alt="product.title" 
+                 class="object-contain w-full h-full p-4 transition-all duration-300" 
+                 @error="onImageError(product, product.current_image_index)">
+            
+            <!-- 代替のブルーナ風アイコン（画像が1枚もない・読み込めない場合） -->
+            <div v-else class="w-full h-full flex items-center justify-center" :class="getIllustrationBg(index)">
+              <svg class="w-32 h-32 opacity-90" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g v-if="index % 4 === 0">
+                  <!-- おうち (ブルー) -->
+                  <path d="M20 50L50 20L80 50V80H20V50Z" fill="#0051A2" stroke="#3B2216" stroke-width="6" stroke-linejoin="round"/>
+                  <rect x="42" y="55" width="16" height="25" fill="#FFCD00" stroke="#3B2216" stroke-width="4"/>
+                  <circle cx="35" cy="42" r="6" fill="#FFCD00" stroke="#3B2216" stroke-width="4"/>
+                </g>
+                <g v-else-if="index % 4 === 1">
+                  <!-- お花 (イエロー) -->
+                  <circle cx="50" cy="50" r="14" fill="#FFCD00" stroke="#3B2216" stroke-width="5"/>
+                  <circle cx="50" cy="24" r="12" fill="#FFFFFF" stroke="#3B2216" stroke-width="5"/>
+                  <circle cx="50" cy="76" r="12" fill="#FFFFFF" stroke="#3B2216" stroke-width="5"/>
+                  <circle cx="24" cy="50" r="12" fill="#FFFFFF" stroke="#3B2216" stroke-width="5"/>
+                  <circle cx="76" cy="50" r="12" fill="#FFFFFF" stroke="#3B2216" stroke-width="5"/>
+                </g>
+                <g v-else-if="index % 4 === 2">
+                  <!-- りんご (レッド) -->
+                  <path d="M50 35C40 25 25 30 25 50C25 75 45 85 50 85C55 85 75 75 75 50C75 30 60 25 50 35Z" fill="#E32915" stroke="#3B2216" stroke-width="6" stroke-linejoin="round"/>
+                  <path d="M50 35C50 25 55 20 60 15" stroke="#3B2216" stroke-width="6" stroke-linecap="round"/>
+                  <path d="M48 24C40 24 35 30 35 30" stroke="#008940" stroke-width="5" stroke-linecap="round"/>
+                </g>
+                <g v-else>
+                  <!-- マグカップ (グリーン) -->
+                  <rect x="25" y="30" width="40" height="50" rx="6" fill="#008940" stroke="#3B2216" stroke-width="6"/>
+                  <path d="M65 40C75 40 80 45 80 55C80 65 75 70 65 70" fill="none" stroke="#3B2216" stroke-width="6" stroke-linecap="round"/>
+                  <circle cx="45" cy="55" r="8" fill="#FFCD00" stroke="#3B2216" stroke-width="4"/>
+                </g>
+              </svg>
+            </div>
+
+            <!-- 画像カルーセルインジケーター（複数画像がある場合のみ表示） -->
+            <div v-if="product.images && product.images.length > 1" class="absolute inset-x-4 bottom-3 flex justify-between items-center bg-[#FAF6EE] bruna-border px-3 py-1 rounded-xl bruna-shadow-sm text-xs font-bold">
+              <button @click.stop="prevImage(product)" class="px-2 py-0.5 hover:bg-gray-200 rounded text-base active:scale-95 transition-transform" title="前の画像">◀</button>
+              <span>{{ product.current_image_index + 1 }} / {{ product.images.length }}</span>
+              <button @click.stop="nextImage(product)" class="px-2 py-0.5 hover:bg-gray-200 rounded text-base active:scale-95 transition-transform" title="次の画像">▶</button>
+            </div>
+            
+            <!-- 価格タグ (税込・税抜併記) -->
+            <div class="absolute top-4 right-4 bg-[#E32915] text-white px-3 py-1.5 font-black text-lg bruna-border rounded-xl bruna-shadow-sm">
+              <div class="text-xs opacity-90 text-center font-bold">税込価格</div>
+              ¥{{ formatPrice(product.price_with_tax) }}
+              <div class="text-[10px] opacity-75 text-center font-bold">税抜: ¥{{ formatPrice(product.price) }}</div>
+            </div>
+
+            <!-- 売り切れバッジ -->
+            <div v-if="product.stock === 0" class="absolute inset-0 bg-black/40 flex items-center justify-center">
+              <span class="bg-[#E32915] text-white px-6 py-3 font-black text-2xl bruna-border rounded-xl bruna-shadow rotate-[-6deg]">
+                SOLD OUT
+              </span>
+            </div>
+          </div>
+
+          <!-- 商品説明＆コード・在庫状況 -->
+          <div class="p-5 flex-grow flex flex-col justify-between bg-white">
+            <div>
+              <h2 class="text-xl font-black mb-2 tracking-wide leading-snug">{{ product.title }}</h2>
+              
+              <!-- 各種コード表示（スプシカラムに連動） -->
+              <div class="bg-[#FAF6EE] bruna-border rounded-xl p-3 mb-4 text-xs font-bold space-y-1">
+                <div class="flex justify-between border-b border-dashed border-[#3B2216]/20 pb-1">
+                  <span class="text-gray-600">コード(NE/AL)</span>
+                  <span class="text-[#3B2216]">{{ product.cord_ne || '-' }} / {{ product.cord_al || '-' }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">JANコード</span>
+                  <span class="text-[#3B2216]">{{ product.jan1 || '-' }} {{ product.jan2 ? ' / ' + product.jan2 : '' }}</span>
+                </div>
+              </div>
+
+              <!-- 在庫状況表示 -->
+              <div class="mb-4 flex items-center justify-between">
+                <span class="text-xs font-black px-2 py-1 rounded bruna-border" :class="product.stock > 0 ? 'bg-[#008940] text-white' : 'bg-gray-200 text-gray-500'">
+                  {{ product.stock > 0 ? 'お取り寄せ可能' : '只今品切れ中' }}
+                </span>
+                <span class="text-sm font-black text-gray-700">
+                  現在庫数: <span class="text-base" :class="product.stock <= 5 ? 'text-[#E32915]' : ''">{{ product.stock }} 個</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- 数量変更エリア -->
+            <div class="flex items-center justify-between border-t-2 border-dashed border-[#3B2216]/30 pt-4">
+              <span class="font-bold text-sm">数量選択</span>
+              <div class="flex items-center gap-3">
+                <!-- マイナスボタン -->
+                <button @click="decrement(index)" :disabled="product.stock === 0" class="w-10 h-10 bg-white bruna-border rounded-lg flex items-center justify-center font-black text-xl bruna-shadow-sm bruna-shadow-active hover:bg-gray-100 transition-colors disabled:opacity-50">
+                  -
+                </button>
+                <span class="w-8 text-center font-black text-xl">{{ getQuantity(index) }}</span>
+                <!-- プラスボタン -->
+                <button @click="increment(index)" :disabled="product.stock === 0 || getQuantity(index) >= product.stock" class="w-10 h-10 bg-[#FFCD00] bruna-border rounded-lg flex items-center justify-center font-black text-xl bruna-shadow-sm bruna-shadow-active hover:bg-[#E2B500] transition-colors disabled:opacity-50">
+                  +
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+
+    <!-- 下部カートバー -->
+    <transition enter-active-class="transition ease-out duration-300" enter-from-class="transform translate-y-full" enter-to-class="transform translate-y-0" leave-active-class="transition ease-in duration-200" leave-from-class="transform translate-y-0" leave-to-class="transform translate-y-full">
+      <div v-if="totalItems > 0" class="fixed bottom-0 left-0 right-0 bg-white bruna-border-t p-4 z-20 shadow-lg">
+        <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div class="text-center sm:text-left">
+            <span class="bg-[#0051A2] text-white px-2 py-1 text-xs font-bold rounded bruna-border bruna-shadow-sm mr-2">
+              注文予定
+            </span>
+            <span class="font-black text-lg text-[#3B2216]">{{ totalItems }}点 のアイテム</span>
+            <span class="mx-2 text-gray-300">|</span>
+            <span class="font-black text-xl text-[#E32915]">合計 ¥{{ formatPrice(totalPrice) }} (税込)</span>
+          </div>
+          
+          <button @click="openOrderModal" class="w-full sm:w-auto bg-[#E32915] text-white px-8 py-3 rounded-xl font-black text-lg bruna-border bruna-shadow bruna-shadow-active hover:bg-[#C51F0D] flex items-center justify-center gap-2 transition-colors">
+            <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+            注文手続きに進む
+          </button>
+        </div>
+      </div>
+    </transition>
+
+    <!-- 注文内容確認モーダル -->
+    <transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition ease-in duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div v-if="isOrderModalOpen" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 flex items-center justify-center p-4">
+        <div class="bg-white bruna-border rounded-2xl w-full max-w-md p-6 bruna-shadow max-h-[90vh] overflow-y-auto">
+          
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-black text-xl flex items-center gap-2">
+              <i data-lucide="clipboard-check" class="text-[#008940]"></i>
+              ご注文内容の確認
+            </h3>
+            <button @click="isOrderModalOpen = false" class="text-gray-500 hover:text-black">
+              <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+          </div>
+
+          <!-- 注文商品リスト -->
+          <div class="space-y-3 mb-6 bg-[#FAF6EE] p-3 rounded-xl bruna-border">
+            <div v-for="item in cartItems" :key="item.index" class="text-xs font-bold space-y-1 py-1.5 border-b border-dashed border-[#3B2216]/10 last:border-0">
+              <div class="flex justify-between items-center text-sm">
+                <span class="font-black text-[#3B2216]">{{ item.title }}</span>
+                <span class="text-[#E32915]">x{{ item.quantity }}</span>
+              </div>
+              <div class="text-[10px] text-gray-500">
+                コード: {{ item.cord_ne || '-' }} / {{ item.cord_al || '-' }} | JAN: {{ item.jan1 || '-' }}
+              </div>
+              <div class="flex justify-between text-gray-700">
+                <span>単価: ¥{{ formatPrice(item.price_with_tax) }} (税込)</span>
+                <span>小計: ¥{{ formatPrice(item.price_with_tax * item.quantity) }}</span>
+              </div>
+            </div>
+            
+            <div class="border-t-2 border-dashed border-[#3B2216]/20 pt-2 flex justify-between items-center font-black text-base text-[#E32915]">
+              <span>総合計金額 (税込)</span>
+              <span>¥{{ formatPrice(totalPrice) }}</span>
+            </div>
+          </div>
+
+          <!-- お客様情報入力フォーム -->
+          <div class="space-y-4 mb-6">
+            <div>
+              <label class="block text-xs font-bold mb-1 text-[#3B2216]">お名前（必須）</label>
+              <input type="text" v-model="customerInfo.name" placeholder="山田 太郎" class="w-full px-3 py-2 bruna-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0051A2] font-bold">
+            </div>
+            <div>
+              <label class="block text-xs font-bold mb-1 text-[#3B2216]">ご連絡先（電話 / メール等）（必須）</label>
+              <input type="text" v-model="customerInfo.contact" placeholder="090-0000-0000 / sample@mail.com" class="w-full px-3 py-2 bruna-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0051A2] font-bold">
+            </div>
+            <div>
+              <label class="block text-xs font-bold mb-1 text-[#3B2216]">お届け先ご住所（配送をご希望の方のみ）</label>
+              <input type="text" v-model="customerInfo.address" placeholder="お届け先住所を入力" class="w-full px-3 py-2 bruna-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0051A2] font-bold">
+            </div>
+            <div>
+              <label class="block text-xs font-bold mb-1 text-[#3B2216]">その他・ご要望（任意）</label>
+              <textarea v-model="customerInfo.memo" placeholder="ご質問や指定事項がございましたらご記入ください" rows="2" class="w-full px-3 py-2 bruna-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0051A2] font-bold"></textarea>
+            </div>
+          </div>
+
+          <!-- 注文送信ボタン -->
+          <div class="space-y-3 border-t border-[#3B2216]/10 pt-4">
+            <div class="text-[11px] font-black text-center text-gray-500 mb-2">
+              送信先メールアドレス: {{ emailDestination }}
+            </div>
+
+            <!-- メールで注文する -->
+            <button @click="sendViaEmail" class="w-full bg-[#0051A2] text-white py-3.5 rounded-xl font-bold text-sm bruna-border bruna-shadow-sm bruna-shadow-active hover:bg-[#003D7A] flex items-center justify-center gap-2 transition-colors">
+              <i data-lucide="mail" class="w-5 h-5"></i>
+              メールアプリを起動して送信する
+            </button>
+
+            <!-- LINEで注文する -->
+            <button @click="sendViaLine" class="w-full bg-[#06C755] text-white py-3 rounded-xl font-bold text-sm bruna-border bruna-shadow-sm bruna-shadow-active hover:opacity-95 flex items-center justify-center gap-2 transition-opacity">
+              <svg class="w-5 h-5 fill-white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M24 10.3c0-5.7-5.4-10.3-12-10.3S0 4.6 0 10.3c0 5.1 4.3 9.3 10.1 10.1.4.1.9.4.1 1.2l-.6 2.6c-.2.8.3.8.7.5 3.3-2.2 6.5-4.8 7.3-6.2 4.1-2.2 6.5-5.3 6.5-8.2zM8.1 13H6.6c-.3 0-.5-.2-.5-.5v-4.9c0-.3.2-.5.5-.5h1.5c.3 0 .5.2.5.5s-.2.5-.5.5H7.1v1.5h1c.3 0 .5.2.5.5s-.2.5-.5.5H7.1v1.5h1c.3 0 .5.2.5.5s-.2.5-.5.5zm4.3-4.9c0 .3-.2.5-.5.5H11v3.9c0 .3-.2.5-.5.5s-.5-.2-.5-.5V8.6c0-.3.2-.5.5-.5h1c.3 0 .4.2.4.5zm3.8 4.9c0 .3-.2.5-.5.5h-1.5c-.3 0-.5-.2-.5-.5v-4.9c0-.3.2-.5.5-.5s.5.2.5.5v3.9h1c.3 0 .5.2.5.5zm3.8 0c0 .3-.2.5-.5.5h-1.5c-.3 0-.5-.2-.5-.5v-4.9c0-.3.2-.5.5-.5h1.5c.3 0 .5.2.5.5s-.2.5-.5.5h-1v1.5h1c.3 0 .5.2.5.5s-.2.5-.5.5h-1v1.5h1c.3 0 .5.2.5.5s-.2.5-.5.5z"/></svg>
+              LINE経由で注文メッセージを送信
+            </button>
+
+            <!-- クリップボードにコピー -->
+            <button @click="copyOrderText" class="w-full bg-white text-gray-700 py-3 rounded-xl font-bold text-sm bruna-border bruna-shadow-sm bruna-shadow-active hover:bg-gray-100 flex items-center justify-center gap-2 transition-colors">
+              <i data-lucide="copy" class="w-5 h-5"></i>
+              注文メッセージをコピー
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </transition>
+
+    <!-- フッター -->
+    <footer class="bg-[#5D3725] text-white bruna-border-t py-8 px-4 text-center mt-auto">
+      <div class="max-w-4xl mx-auto space-y-2 text-sm font-bold opacity-90">
+        <p>© Bruna Market. All rights reserved.</p>
+        <p class="text-xs opacity-75">このカタログはGoogleスプレッドシートをもとに完全自動更新されています。</p>
+      </div>
+    </footer>
+
+  </div>
+
+  <script>
+    const { createApp, ref, computed, onMounted, nextTick } = Vue;
+
+    createApp({
+      setup() {
+        // --- デフォルトスプレッドシート共有URL (ご提示のスプシID) ---
+        const defaultSpreadsheetUrl = 'https://docs.google.com/spreadsheets/d/1xXFBM8tuBfxLDgDDD9pAmlG9-Uq63aLM-qTci_Gagi4/edit?usp=sharing&sheet=%E5%95%86%E5%93%81';
+        const defaultEmail = 'takeonec1@gmail.com';
+
+        // --- 状態管理 ---
+        const spreadsheetUrl = ref(localStorage.getItem('bruna_spreadsheet_url') || defaultSpreadsheetUrl);
+        const emailDestination = ref(localStorage.getItem('bruna_email_destination') || defaultEmail);
+        
+        const tempSpreadsheetUrl = ref(spreadsheetUrl.value);
+        const tempEmailDestination = ref(emailDestination.value);
+        
+        const isConfigOpen = ref(false);
+        const isOrderModalOpen = ref(false);
+        const isLoading = ref(false);
+        const error = ref(null);
+        
+        const products = ref([]);
+        const cart = ref({}); // { index: quantity }
+        
+        const customerInfo = ref({
+          name: '',
+          contact: '',
+          address: '',
+          memo: ''
+        });
+
+        // デモデータ (スプシ読み込みエラー時等のフォールバック用)
+        const demoProducts = [
+          {
+            title: "デモ商品A: ブルーナ・おうちのクッション",
+            price: 3200,
+            price_with_tax: 3520,
+            stock: 10,
+            cord_ne: "NE-101",
+            cord_al: "AL-999",
+            jan1: "4901234567890",
+            jan2: "",
+            images: [],
+            current_image_index: 0,
+            description: "お部屋を彩る、ブルーナカラーの可愛いクッションです。"
+          },
+          {
+            title: "デモ商品B: 飾れるフラワーマグカップ",
+            price: 1800,
+            price_with_tax: 1980,
+            stock: 0,
+            cord_ne: "NE-102",
+            cord_al: "AL-888",
+            jan1: "4901234567891",
+            jan2: "4901234567892",
+            images: [],
+            current_image_index: 0,
+            description: "売り切れ状態の表示デモ。在庫数が「0」に設定されています。"
+          }
+        ];
+
+        // --- 算出プロパティ ---
+        const totalItems = computed(() => {
+          return Object.values(cart.value).reduce((sum, qty) => sum + qty, 0);
+        });
+
+        const totalPrice = computed(() => {
+          return Object.entries(cart.value).reduce((sum, [index, qty]) => {
+            const product = products.value[index];
+            return sum + (product ? product.price_with_tax * qty : 0);
+          }, 0);
+        });
+
+        const cartItems = computed(() => {
+          return Object.entries(cart.value)
+            .filter(([_, qty]) => qty > 0)
+            .map(([index, qty]) => ({
+              index: parseInt(index),
+              quantity: qty,
+              ...products.value[index]
+            }));
+        });
+
+        // --- ライフサイクル ---
+        onMounted(() => {
+          loadSpreadsheetData();
+          nextTick(() => {
+            if (typeof lucide !== 'undefined') {
+              lucide.createIcons();
+            }
+          });
+        });
+
+        // --- メソッド ---
+
+        // スプレッドシートURLからIDとシート名を抽出するヘルパー
+        const extractSpreadsheetDetails = (url) => {
+          let id = '1xXFBM8tuBfxLDgDDD9pAmlG9-Uq63aLM-qTci_Gagi4';
+          let sheet = '商品';
+
+          if (!url) return { id, sheet, gid: '' };
+
+          // スプレッドシートIDを抽出
+          const idMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+          if (idMatch && idMatch[1]) {
+            id = idMatch[1];
+          }
+
+          // URL全体（フラグメントを含む）からsheet名やgidを頑健に抽出
+          const decodedUrl = decodeURIComponent(url);
+          const sheetMatch = decodedUrl.match(/[?&#]sheet=([^&]+)/);
+          const gidMatch = decodedUrl.match(/[?&#]gid=([^&]+)/);
+
+          if (sheetMatch) {
+            sheet = sheetMatch[1];
+          } else if (gidMatch) {
+            // gid=0以外の場合は、Visualization APIにgidそのものを優先指定させるためsheet名をリセットします
+            if (gidMatch[1] !== '0') {
+              sheet = '';
+            }
+          }
+
+          return { id, sheet, gid: gidMatch ? gidMatch[1] : '' };
+        };
+
+        // 【最重要】CORSエラーを100%安全にバイパスするためのJSONP通信処理
+        const fetchSpreadsheetJsonp = (spreadsheetId, sheetName, gid) => {
+          return new Promise((resolve, reject) => {
+            // 重複しないユニークな一時的グローバル関数名を作成
+            const callbackName = 'gvizCallback_' + Math.random().toString(36).substring(2, 9);
+            
+            // タイムアウト設定 (8秒)
+            const timeoutId = setTimeout(() => {
+              cleanup();
+              reject(new Error('スプレッドシートの応答がタイムアウトしました。共有権限（リンクを知っている全員が閲覧者）をご確認ください。'));
+            }, 8000);
+
+            const cleanup = () => {
+              clearTimeout(timeoutId);
+              delete window[callbackName];
+              const script = document.getElementById(callbackName);
+              if (script) script.remove();
+            };
+
+            // グローバルスコープにコールバックを登録してJSONP応答を受け取る
+            window[callbackName] = (data) => {
+              cleanup();
+              resolve(data);
+            };
+
+            // 動的にスクリプトタグを構築してCORS制限を完全回避
+            const script = document.createElement('script');
+            script.id = callbackName;
+            
+            let srcUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=responseHandler:${callbackName}&headers=1&t=${new Date().getTime()}`;
+            if (sheetName) {
+              srcUrl += `&sheet=${encodeURIComponent(sheetName)}`;
+            } else if (gid) {
+              srcUrl += `&gid=${gid}`;
+            } else {
+              srcUrl += `&sheet=%E5%95%86%E5%93%81`; // デフォルトフォールバック
+            }
+
+            script.src = srcUrl;
+            
+            script.onerror = () => {
+              cleanup();
+              reject(new Error('データの読み込み中にエラー（ネットワーク、あるいは共有設定アクセス制限）が発生しました。'));
+            };
+
+            document.head.appendChild(script);
+          });
+        };
+
+        // スプレッドシートデータの取得とバインドのメインフロー
+        const loadSpreadsheetData = async () => {
+          isLoading.value = true;
+          error.value = null;
+
+          const { id, sheet, gid } = extractSpreadsheetDetails(spreadsheetUrl.value);
+
+          try {
+            // JSONPでデータを取得
+            const gvizData = await fetchSpreadsheetJsonp(id, sheet, gid);
+            
+            // 取得したJSONPデータをパース
+            const parsedData = parseGvizData(gvizData);
+
+            if (parsedData.length === 0) {
+              throw new Error('スプレッドシート内から対象の商品行を検出できませんでした。列のヘッダー定義（「商品名」「売価(税抜)」「画像リンク1」など）に誤りがないかご確認ください。');
+            }
+
+            products.value = parsedData;
+            resetCart();
+          } catch (err) {
+            console.error(err);
+            error.value = err.message || 'データ接続中に問題が発生しました。';
+            // 安全なリカバリとしてデモ商品データを画面にロード
+            products.value = [...demoProducts];
+            resetCart();
+          } finally {
+            isLoading.value = false;
+            nextTick(() => {
+              if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+              }
+            });
+          }
+        };
+
+        // Google Visualization API JSON データの安全なマッピングパーサー
+        const parseGvizData = (data) => {
+          if (!data || !data.table || !data.table.rows) return [];
+          
+          const cols = data.table.cols;
+          let rows = data.table.rows;
+          
+          // ヘッダー名（カラム名）からインデックスへのマッピングを作成
+          const headerMap = {};
+          let headerFound = false;
+          let headerRowIndex = -1;
+          
+          // 1. スプレッドシートの全行を順番に走査して「商品名」などのキーを含む【本物のヘッダー行】を動的に検出（上部空行・ノイズ対策）
+          for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || !row.c) continue;
+            
+            const tempMap = {};
+            let hasProductTitleHeader = false;
+            
+            row.c.forEach((cell, idx) => {
+              if (cell && cell.v !== null && cell.v !== undefined) {
+                // スペースや改行などを完全に除去してキーを正規化
+                const val = String(cell.v).trim().replace(/[\s　\r\n]/g, '');
+                tempMap[val] = idx;
+                
+                // 代表的な商品名ヘッダーのキーワード候補
+                if (['商品名', '商品', 'title', 'name'].includes(val)) {
+                  hasProductTitleHeader = true;
+                }
+              }
+            });
+            
+            if (hasProductTitleHeader) {
+              // 表記揺れマッピング用にコピーし、ヘッダー行を確定
+              Object.assign(headerMap, tempMap);
+              headerFound = true;
+              headerRowIndex = i;
+              break;
+            }
+          }
+
+          // 2. もし動的スキャンでヘッダーが見つからなかった場合のフォールバック（APIラベルフォールバック）
+          if (!headerFound) {
+            let hasLabels = false;
+            cols.forEach((col, idx) => {
+              if (col && col.label) {
+                const label = String(col.label).trim().replace(/[\s　\r\n]/g, '');
+                headerMap[label] = idx;
+                hasLabels = true;
+              }
+            });
+
+            const hasRequiredHeader = headerMap['商品名'] !== undefined || headerMap['title'] !== undefined || headerMap['name'] !== undefined;
+            
+            if (!hasLabels || !hasRequiredHeader) {
+              if (rows.length > 0 && rows[0].c) {
+                const firstRow = rows[0].c;
+                firstRow.forEach((cell, idx) => {
+                  if (cell && cell.v !== null && cell.v !== undefined) {
+                    const label = String(cell.v).trim().replace(/[\s　\r\n]/g, '');
+                    headerMap[label] = idx;
+                  }
+                });
+                headerFound = true;
+                headerRowIndex = 0;
+              }
+            } else {
+              headerFound = true;
+              headerRowIndex = -1; // APIのラベルをヘッダーとして使用するため、データ行は0行目から開始
+            }
+          }
+
+          if (!headerFound && Object.keys(headerMap).length === 0) return [];
+
+          const result = [];
+          
+          // ヘッダー行の次の行からデータを実質処理
+          const startDataRowIndex = headerRowIndex + 1;
+          
+          for (let i = startDataRowIndex; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || !row.c) continue;
+            
+            // 複数の候補キーから、表記揺れを吸収しつつ部分一致も含めて値を取得する関数
+            const getValueByKeys = (targetKeys) => {
+              const normalize = (str) => {
+                return str.toLowerCase()
+                          .replace(/[\s　\r\n]/g, '')
+                          .replace(/（/g, '(')
+                          .replace(/）/g, ')');
+              };
+              
+              const normalizedTargets = targetKeys.map(k => normalize(k));
+              
+              for (const [key, idx] of Object.entries(headerMap)) {
+                const normalizedKey = normalize(key);
+                // カラム名がターゲットと完全一致するか、あるいはターゲットを含んでいるかチェック
+                const isMatch = normalizedTargets.some(t => normalizedKey === t || normalizedKey.includes(t));
+                if (isMatch) {
+                  if (idx !== undefined && idx < row.c.length && row.c[idx]) {
+                    const cell = row.c[idx];
+                    if (cell.v !== null && cell.v !== undefined) {
+                      return cell.v;
+                    }
+                  }
+                }
+              }
+              return '';
+            };
+
+            const title = String(getValueByKeys(['商品名', 'title', 'name'])).trim();
+            if (!title) continue; // 商品名が入っていない無効な空行はスキップ
+
+            const priceVal = getValueByKeys(['売価(税抜)', '売価（税抜）', '売価', 'price', 'price_ex_tax']);
+            const priceExTax = parseInt(priceVal) || 0;
+            
+            const stockVal = getValueByKeys(['在庫数', '在庫', 'stock']);
+            const stock = (stockVal === '' || stockVal === undefined) ? 999 : (parseInt(stockVal) || 0);
+
+            const cord_ne = String(getValueByKeys(['cord_ne', 'code_ne', 'NEコード', 'ne']));
+            const cord_al = String(getValueByKeys(['cord_al', 'code_al', 'ALコード', 'al']));
+            const jan1 = String(getValueByKeys(['JAN1', 'jan1', 'JANコード1']));
+            const jan2 = String(getValueByKeys(['JAN2', 'jan2', 'JANコード2']));
+
+            // 画像リンク1〜5の動的読み込み
+            const img1 = String(getValueByKeys(['画像リンク1', '画像1', 'image1', 'image_url1']));
+            const img2 = String(getValueByKeys(['画像リンク2', '画像2', 'image2', 'image_url2']));
+            const img3 = String(getValueByKeys(['画像リンク3', '画像3', 'image3', 'image_url3']));
+            const img4 = String(getValueByKeys(['画像リンク4', '画像4', 'image4', 'image_url4']));
+            const img5 = String(getValueByKeys(['画像リンク5', '画像5', 'image5', 'image_url5']));
+
+            const images = [img1, img2, img3, img4, img5]
+              .filter(url => url.trim() !== '')
+              .map(url => convertDriveUrl(url));
+
+            result.push({
+              title,
+              price: priceExTax,
+              price_with_tax: Math.floor(priceExTax * 1.1), // 10%税込
+              stock,
+              cord_ne,
+              cord_al,
+              jan1,
+              jan2,
+              images,
+              current_image_index: 0,
+              description: String(getValueByKeys(['説明', '説明文', 'desc', 'description']) || `${title} の詳細情報です。`)
+            });
+          }
+          return result;
+        };
+
+        // Googleドライブ画像をHTML上で直に読み込める形式へ変換
+        const convertDriveUrl = (url) => {
+          if (!url) return '';
+          const regExp = /\/file\/d\/([a-zA-Z0-9_-]+)/;
+          const matches = url.match(regExp);
+          if (matches && matches[1]) {
+            return `https://lh3.googleusercontent.com/d/${matches[1]}`;
+          }
+          return url;
+        };
+
+        // カルーセルコントロール
+        const nextImage = (product) => {
+          if (product.images.length > 1) {
+            product.current_image_index = (product.current_image_index + 1) % product.images.length;
+          }
+        };
+
+        const prevImage = (product) => {
+          if (product.images.length > 1) {
+            product.current_image_index = (product.current_image_index - 1 + product.images.length) % product.images.length;
+          }
+        };
+
+        // 接続先設定保存
+        const saveSettings = () => {
+          spreadsheetUrl.value = tempSpreadsheetUrl.value.trim();
+          emailDestination.value = tempEmailDestination.value.trim();
+          
+          localStorage.setItem('bruna_spreadsheet_url', spreadsheetUrl.value);
+          localStorage.setItem('bruna_email_destination', emailDestination.value);
+          
+          isConfigOpen.value = false;
+          loadSpreadsheetData();
+        };
+
+        // 設定のリセット
+        const resetSettings = () => {
+          if (confirm('接続設定を最初の状態（ takeonec1@gmail.com 宛て、ご指定のスプシ ）にリセットしますか？')) {
+            spreadsheetUrl.value = defaultSpreadsheetUrl;
+            emailDestination.value = defaultEmail;
+            
+            tempSpreadsheetUrl.value = defaultSpreadsheetUrl;
+            tempEmailDestination.value = defaultEmail;
+            
+            localStorage.removeItem('bruna_spreadsheet_url');
+            localStorage.removeItem('bruna_email_destination');
+            isConfigOpen.value = false;
+            loadSpreadsheetData();
+          }
+        };
+
+        // カート初期化
+        const resetCart = () => {
+          cart.value = {};
+          products.value.forEach((_, index) => {
+            cart.value[index] = 0;
+          });
+        };
+
+        const getQuantity = (index) => {
+          return cart.value[index] || 0;
+        };
+
+        const increment = (index) => {
+          const product = products.value[index];
+          if (cart.value[index] === undefined) {
+            cart.value[index] = 0;
+          }
+          
+          if (cart.value[index] < product.stock) {
+            cart.value[index]++;
+          } else {
+            alert(`申し訳ありません。この商品の現在庫は最大 ${product.stock} 個です。`);
+          }
+        };
+
+        const decrement = (index) => {
+          if (cart.value[index] > 0) {
+            cart.value[index]--;
+          }
+        };
+
+        // 画像フェッチ失敗時のハンドラー
+        const onImageError = (product, imgIndex) => {
+          product.images.splice(imgIndex, 1);
+          if (product.current_image_index >= product.images.length) {
+            product.current_image_index = 0;
+          }
+        };
+
+        const getCardBgClass = (index) => {
+          const mod = index % 4;
+          if (mod === 0) return 'hover:border-[#0051A2]';
+          if (mod === 1) return 'hover:border-[#FFCD00]';
+          if (mod === 2) return 'hover:border-[#E32915]';
+          return 'hover:border-[#008940]';
+        };
+
+        const getIllustrationBg = (index) => {
+          return 'bg-[#FAF6EE]';
+        };
+
+        const formatPrice = (val) => {
+          return Number(val).toLocaleString();
+        };
+
+        const openOrderModal = () => {
+          isOrderModalOpen.value = true;
+          nextTick(() => {
+            if (typeof lucide !== 'undefined') {
+              lucide.createIcons();
+            }
+          });
+        };
+
+        const validateForm = () => {
+          if (!customerInfo.value.name.trim() || !customerInfo.value.contact.trim()) {
+            alert('お名前とご連絡先は、注文手続きのためにご入力が必要です。');
+            return false;
+          }
+          return true;
+        };
+
+        // 注文文面の構築
+        const buildOrderMessage = () => {
+          let msg = `🌟 【ブルーナ・マーケット 注文依頼】 🌟\n`;
+          msg += `---------------------------\n`;
+          msg += `👤 お名前: ${customerInfo.value.name}\n`;
+          msg += `📞 連絡先: ${customerInfo.value.contact}\n`;
+          if (customerInfo.value.address) {
+            msg += `📍 お届け先住所: ${customerInfo.value.address}\n`;
+          }
+          if (customerInfo.value.memo) {
+            msg += `📝 ご要望・備考欄: ${customerInfo.value.memo}\n`;
+          }
+          msg += `---------------------------\n`;
+          msg += `📦 注文商品一覧:\n`;
+          
+          cartItems.value.forEach(item => {
+            msg += `・ ${item.title}\n`;
+            msg += `   [コード: ${item.cord_ne || '-'} / ${item.cord_al || '-'}]\n`;
+            if (item.jan1) {
+              msg += `   [JAN: ${item.jan1} ${item.jan2 ? '/ ' + item.jan2 : ''}]\n`;
+            }
+            msg += `   (単価: ¥${item.price_with_tax.toLocaleString()} 税込) x ${item.quantity} = ¥${(item.price_with_tax * item.quantity).toLocaleString()} 税込\n\n`;
+          });
+          
+          msg += `---------------------------\n`;
+          msg += `💰 総合計金額: ¥${totalPrice.value.toLocaleString()} (税込)\n`;
+          msg += `---------------------------\n`;
+          msg += `※この注文はブラウザから送信メールとして構成されました。`;
+          return msg;
+        };
+
+        // ① メールで注文
+        const sendViaEmail = () => {
+          if (!validateForm()) return;
+          const text = buildOrderMessage();
+          const targetEmail = emailDestination.value;
+          const mailtoUrl = `mailto:${targetEmail}?subject=${encodeURIComponent('ブルーナ・マーケット商品注文申込み')}&body=${encodeURIComponent(text)}`;
+          window.location.href = mailtoUrl;
+        };
+
+        // ② LINEで注文
+        const sendViaLine = () => {
+          if (!validateForm()) return;
+          const text = buildOrderMessage();
+          const lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(text)}`;
+          window.open(lineUrl, '_blank');
+        };
+
+        // ③ クリップボードコピー
+        const copyOrderText = () => {
+          if (!validateForm()) return;
+          const text = buildOrderMessage();
+          
+          const textarea = document.createElement('textarea');
+          textarea.value = text;
+          document.body.appendChild(textarea);
+          textarea.select();
+          try {
+            document.execCommand('copy');
+            alert('注文内容のテキストをクリップボードにコピーしました！そのまま貼り付けてご連絡等にご利用ください。');
+          } catch (err) {
+            alert('コピーに失敗しました。大変お手数ですが選択してコピーしてください。');
+          }
+          document.body.removeChild(textarea);
+        };
+
+        return {
+          spreadsheetUrl,
+          emailDestination,
+          tempSpreadsheetUrl,
+          tempEmailDestination,
+          isConfigOpen,
+          isOrderModalOpen,
+          isLoading,
+          error,
+          products,
+          customerInfo,
+          totalItems,
+          totalPrice,
+          cartItems,
+          loadSpreadsheetData,
+          saveSettings,
+          resetSettings,
+          getQuantity,
+          increment,
+          decrement,
+          nextImage,
+          prevImage,
+          getCardBgClass,
+          getIllustrationBg,
+          formatPrice,
+          onImageError,
+          openOrderModal,
+          sendViaLine,
+          sendViaEmail,
+          copyOrderText
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
