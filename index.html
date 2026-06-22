@@ -4,15 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>テイクオン</title>
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Fonts: Zen Maru Gothic (温かみのある丸ゴシック) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
-  <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Vue.js 3 -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <style>
@@ -47,15 +43,12 @@
 
   <div id="app" class="min-h-screen flex flex-col pb-24">
     
-    <!-- ヘッダー（追随しない非固定化仕様） -->
     <header class="bg-[#FFCD00] bruna-border-b py-6 px-4 text-center shadow-sm">
       <div class="max-w-4xl mx-auto flex justify-between items-center">
-        <!-- ダミーの空白（バランス用） -->
         <div class="w-10"></div>
         
         <div>
           <h1 class="text-2xl md:text-3xl font-black tracking-wider flex items-center justify-center gap-2">
-            <!-- シンプルなうさぎ風SVGアイコン -->
             <svg class="w-8 h-8 inline-block" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M35 15C35 7 43 7 43 15V45H35V15Z" fill="#FFFFFF" stroke="#3B2216" stroke-width="8" stroke-linejoin="round"/>
               <path d="M57 15C57 7 65 7 65 15V45H57V15Z" fill="#FFFFFF" stroke="#3B2216" stroke-width="8" stroke-linejoin="round"/>
@@ -64,21 +57,18 @@
               <circle cx="58" cy="55" r="4" fill="#3B2216"/>
               <path d="M47 64L53 70M53 64L47 70" stroke="#3B2216" stroke-width="5" stroke-linecap="round"/>
             </svg>
-            テイクオン・カタログ
+            テイクオンB面
           </h1>
         </div>
 
-        <!-- 設定ボタン -->
         <button @click="isConfigOpen = !isConfigOpen" class="w-10 h-10 bg-white bruna-border rounded-full flex items-center justify-center bruna-shadow-sm bruna-shadow-active hover:bg-[#FAF6EE] transition-colors" title="接続設定">
           <i data-lucide="settings" class="w-5 h-5 text-[#3B2216]"></i>
         </button>
       </div>
     </header>
 
-    <!-- メインコンテンツ -->
     <main class="flex-grow max-w-4xl w-full mx-auto px-4 py-8">
       
-      <!-- GAS連携やスプシURLの設定パネル -->
       <transition enter-active-class="transition ease-out duration-200" enter-from-class="transform opacity-0 -translate-y-4" enter-to-class="transform opacity-100 translate-y-0" leave-active-class="transition ease-in duration-150" leave-from-class="transform opacity-100 translate-y-0" leave-to-class="transform opacity-0 -translate-y-4">
         <div v-if="isConfigOpen" class="bg-white bruna-border rounded-2xl p-6 mb-8 bruna-shadow bg-[#FAF6EE]">
           <div class="flex justify-between items-center mb-4">
@@ -120,13 +110,11 @@
         </div>
       </transition>
 
-      <!-- ローディング表示 -->
       <div v-if="isLoading" class="text-center py-20">
         <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-[#3B2216] border-t-[#FFCD00] mb-4"></div>
         <p class="font-bold text-[#3B2216] text-lg">スプレッドシートから最新データをフェッチ中...</p>
       </div>
 
-      <!-- エラー表示 -->
       <div v-else-if="error" class="bg-[#E32915] text-white bruna-border rounded-2xl p-6 mb-8 bruna-shadow">
         <h3 class="font-black text-lg mb-2 flex items-center gap-2">
           <i data-lucide="alert-triangle" class="w-6 h-6"></i>
@@ -144,16 +132,13 @@
         </div>
       </div>
 
-      <!-- 商品リスト（スプシのカラム構造にマッピング） -->
       <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div v-for="(product, index) in products" :key="index" 
              class="bg-white bruna-border rounded-2xl overflow-hidden bruna-shadow flex flex-col justify-between transition-all duration-200"
              :class="[getCardBgClass(index), product.stock === 0 ? 'opacity-70' : '']">
           
-          <!-- 商品画像エリア（複数画像カルーセル対応） -->
           <div class="relative bg-white bruna-border-b h-72 flex items-center justify-center overflow-hidden">
             
-            <!-- カルーセルメイン画像（スマートフォン対応属性を維持） -->
             <img v-if="product.images && product.images.length > 0 && product.images[product.current_image_index]" 
                  :src="product.images[product.current_image_index]" 
                  :alt="product.title" 
@@ -161,17 +146,14 @@
                  referrerpolicy="no-referrer"
                  @error="onImageError(product, product.current_image_index)">
             
-            <!-- 代替のキャラクター風アイコン（画像がない場合） -->
             <div v-else class="w-full h-full flex items-center justify-center" :class="getIllustrationBg(index)">
               <svg class="w-32 h-32 opacity-90" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <g v-if="index % 4 === 0">
-                  <!-- おうち (ブルー) -->
                   <path d="M20 50L50 20L80 50V80H20V50Z" fill="#0051A2" stroke="#3B2216" stroke-width="6" stroke-linejoin="round"/>
                   <rect x="42" y="55" width="16" height="25" fill="#FFCD00" stroke="#3B2216" stroke-width="4"/>
                   <circle cx="35" cy="42" r="6" fill="#FFCD00" stroke="#3B2216" stroke-width="4"/>
                 </g>
                 <g v-else-if="index % 4 === 1">
-                  <!-- お花 (イエロー) -->
                   <circle cx="50" cy="50" r="14" fill="#FFCD00" stroke="#3B2216" stroke-width="5"/>
                   <circle cx="50" cy="24" r="12" fill="#FFFFFF" stroke="#3B2216" stroke-width="5"/>
                   <circle cx="50" cy="76" r="12" fill="#FFFFFF" stroke="#3B2216" stroke-width="5"/>
@@ -179,13 +161,11 @@
                   <circle cx="76" cy="50" r="12" fill="#FFFFFF" stroke="#3B2216" stroke-width="5"/>
                 </g>
                 <g v-else-if="index % 4 === 2">
-                  <!-- りんご (レッド) -->
                   <path d="M50 35C40 25 25 30 25 50C25 75 45 85 50 85C55 85 75 75 75 50C75 30 60 25 50 35Z" fill="#E32915" stroke="#3B2216" stroke-width="6" stroke-linejoin="round"/>
                   <path d="M50 35C50 25 55 20 60 15" stroke="#3B2216" stroke-width="6" stroke-linecap="round"/>
                   <path d="M48 24C40 24 35 30 35 30" stroke="#008940" stroke-width="5" stroke-linecap="round"/>
                 </g>
                 <g v-else>
-                  <!-- マグカップ (グリーン) -->
                   <rect x="25" y="30" width="40" height="50" rx="6" fill="#008940" stroke="#3B2216" stroke-width="6"/>
                   <path d="M65 40C75 40 80 45 80 55C80 65 75 70 65 70" fill="none" stroke="#3B2216" stroke-width="6" stroke-linecap="round"/>
                   <circle cx="45" cy="55" r="8" fill="#FFCD00" stroke="#3B2216" stroke-width="4"/>
@@ -193,20 +173,17 @@
               </svg>
             </div>
 
-            <!-- 画像カルーセルインジケーター（複数画像がある場合のみ表示） -->
             <div v-if="product.images && product.images.length > 1" class="absolute inset-x-4 bottom-3 flex justify-between items-center bg-[#FAF6EE] bruna-border px-3 py-1 rounded-xl bruna-shadow-sm text-xs font-bold">
               <button @click.stop="prevImage(product)" class="px-2 py-0.5 hover:bg-gray-200 rounded text-base active:scale-95 transition-transform" title="前の画像">◀</button>
               <span>{{ product.current_image_index + 1 }} / {{ product.images.length }}</span>
               <button @click.stop="nextImage(product)" class="px-2 py-0.5 hover:bg-gray-200 rounded text-base active:scale-95 transition-transform" title="次の画像">▶</button>
             </div>
             
-            <!-- 価格タグ (税率をスプシから取得して税込価格のみを表示) -->
             <div class="absolute top-4 right-4 bg-[#E32915] text-white px-3 py-2 font-black text-lg bruna-border rounded-xl bruna-shadow-sm">
               <div class="text-xs opacity-90 text-center font-bold">税込価格({{ product.tax_percent }}%)</div>
               ¥{{ formatPrice(product.price_with_tax) }}
             </div>
 
-            <!-- 売り切れバッジ -->
             <div v-if="product.stock === 0" class="absolute inset-0 bg-black/40 flex items-center justify-center">
               <span class="bg-[#E32915] text-white px-6 py-3 font-black text-2xl bruna-border rounded-xl bruna-shadow rotate-[-6deg]">
                 SOLD OUT
@@ -214,18 +191,14 @@
             </div>
           </div>
 
-          <!-- 商品説明＆コード・在庫状況 -->
           <div class="p-5 flex-grow flex flex-col justify-between bg-white">
             <div>
-              <!-- 商品名 -->
               <h2 class="text-xl font-black tracking-wide leading-snug">{{ product.title }}</h2>
               
-              <!-- M列：商品概要（商品名の下に配置） -->
               <p v-if="product.overview" class="text-sm font-bold text-gray-500 mt-1 mb-4 leading-relaxed">
                 {{ product.overview }}
               </p>
 
-              <!-- 現在庫数とJANコードをスッキリ横並びに配置 -->
               <div class="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-black text-gray-700">
                 <span>
                   現在庫数: <span :class="product.stock <= 5 ? 'text-[#E32915]' : ''">{{ product.stock }}個</span>
@@ -236,16 +209,13 @@
               </div>
             </div>
 
-            <!-- 数量変更エリア -->
             <div class="flex items-center justify-between border-t-2 border-dashed border-[#3B2216]/30 pt-4">
               <span class="font-bold text-sm">数量選択</span>
               <div class="flex items-center gap-3">
-                <!-- マイナスボタン -->
                 <button @click="decrement(index)" :disabled="product.stock === 0" class="w-10 h-10 bg-white bruna-border rounded-lg flex items-center justify-center font-black text-xl bruna-shadow-sm bruna-shadow-active hover:bg-gray-100 transition-colors disabled:opacity-50">
                   -
                 </button>
                 <span class="w-8 text-center font-black text-xl">{{ getQuantity(index) }}</span>
-                <!-- プラスボタン -->
                 <button @click="increment(index)" :disabled="product.stock === 0 || getQuantity(index) >= product.stock" class="w-10 h-10 bg-[#FFCD00] bruna-border rounded-lg flex items-center justify-center font-black text-xl bruna-shadow-sm bruna-shadow-active hover:bg-[#E2B500] transition-colors disabled:opacity-50">
                   +
                 </button>
@@ -258,7 +228,6 @@
 
     </main>
 
-    <!-- 下部カートバー -->
     <transition enter-active-class="transition ease-out duration-300" enter-from-class="transform translate-y-full" enter-to-class="transform translate-y-0" leave-active-class="transition ease-in duration-200" leave-from-class="transform translate-y-0" leave-to-class="transform translate-y-full">
       <div v-if="totalItems > 0" class="fixed bottom-0 left-0 right-0 bg-white bruna-border-t p-4 z-20 shadow-lg">
         <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -279,7 +248,6 @@
       </div>
     </transition>
 
-    <!-- 注文内容確認モーダル -->
     <transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition ease-in duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
       <div v-if="isOrderModalOpen" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 flex items-center justify-center p-4">
         <div class="bg-white bruna-border rounded-2xl w-full max-w-md p-6 bruna-shadow max-h-[90vh] overflow-y-auto">
@@ -294,7 +262,6 @@
             </button>
           </div>
 
-          <!-- 注文商品リスト -->
           <div class="space-y-3 mb-6 bg-[#FAF6EE] p-3 rounded-xl bruna-border">
             <div v-for="item in cartItems" :key="item.index" class="text-xs font-bold space-y-1 py-1.5 border-b border-dashed border-[#3B2216]/10 last:border-0">
               <div class="flex justify-between items-center text-sm">
@@ -316,7 +283,6 @@
             </div>
           </div>
 
-          <!-- お客様情報入力フォーム -->
           <div class="space-y-4 mb-6">
             <div>
               <label class="block text-xs font-bold mb-1 text-[#3B2216]">お名前（必須）</label>
@@ -336,25 +302,21 @@
             </div>
           </div>
 
-          <!-- 注文送信ボタン -->
           <div class="space-y-3 border-t border-[#3B2216]/10 pt-4">
             <div class="text-[11px] font-black text-center text-gray-500 mb-2">
               送信先メールアドレス: {{ emailDestination }}
             </div>
 
-            <!-- メールで注文する -->
             <button @click="sendViaEmail" class="w-full bg-[#0051A2] text-white py-3.5 rounded-xl font-bold text-sm bruna-border bruna-shadow-sm bruna-shadow-active hover:bg-[#003D7A] flex items-center justify-center gap-2 transition-colors">
               <i data-lucide="mail" class="w-5 h-5"></i>
               メールアプリを起動して送信する
             </button>
 
-            <!-- LINEで注文する -->
             <button @click="sendViaLine" class="w-full bg-[#06C755] text-white py-3 rounded-xl font-bold text-sm bruna-border bruna-shadow-sm bruna-shadow-active hover:opacity-95 flex items-center justify-center gap-2 transition-opacity">
               <svg class="w-5 h-5 fill-white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M24 10.3c0-5.7-5.4-10.3-12-10.3S0 4.6 0 10.3c0 5.1 4.3 9.3 10.1 10.1.4.1.9.4.1 1.2l-.6 2.6c-.2.8.3.8.7.5 3.3-2.2 6.5-4.8 7.3-6.2 4.1-2.2 6.5-5.3 6.5-8.2zM8.1 13H6.6c-.3 0-.5-.2-.5-.5v-4.9c0-.3.2-.5.5-.5h1.5c.3 0 .5.2.5.5s-.2.5-.5.5H7.1v1.5h1c.3 0 .5.2.5.5s-.2.5-.5.5H7.1v1.5h1c.3 0 .5.2.5.5s-.2.5-.5.5zm4.3-4.9c0 .3-.2.5-.5.5H11v3.9c0 .3-.2.5-.5.5s-.5-.2-.5-.5V8.6c0-.3.2-.5.5-.5h1c.3 0 .4.2.4.5zm3.8 4.9c0 .3-.2.5-.5.5h-1.5c-.3 0-.5-.2-.5-.5v-4.9c0-.3.2-.5.5-.5s.5.2.5.5v3.9h1c.3 0 .5.2.5.5zm3.8 0c0 .3-.2.5-.5.5h-1.5c-.3 0-.5-.2-.5-.5v-4.9c0-.3.2-.5.5-.5h1.5c.3 0 .5.2.5.5s-.2.5-.5.5h-1v1.5h1c.3 0 .5.2.5.5s-.2.5-.5.5h-1v1.5h1c.3 0 .5.2.5.5s-.2.5-.5.5z"/></svg>
               LINE経由で注文メッセージを送信
             </button>
 
-            <!-- クリップボードにコピー -->
             <button @click="copyOrderText" class="w-full bg-white text-gray-700 py-3 rounded-xl font-bold text-sm bruna-border bruna-shadow-sm bruna-shadow-active hover:bg-gray-100 flex items-center justify-center gap-2 transition-colors">
               <i data-lucide="copy" class="w-5 h-5"></i>
               注文メッセージをコピー
@@ -365,7 +327,6 @@
       </div>
     </transition>
 
-    <!-- フッター -->
     <footer class="bg-[#5D3725] text-white bruna-border-t py-6 px-4 text-center mt-auto">
       <div class="max-w-4xl mx-auto text-sm font-bold opacity-90">
         <p>© テイクオン. All rights reserved.</p>
@@ -582,7 +543,7 @@
         // Google Visualization API JSON データのパーサー（列固定決め打ち）
         // A=0:cord_ne, B=1:cord_al, C=2:JAN1, D=3:JAN2, E=4:商品名,
         // F=5:在庫数, G=6:売価（税抜）, H=7:画像リンク1, I=8:画像リンク2,
-        // J=9:画像リンク3, K=10:画像リンク4, L=11:画像リンク5, M=12:商品概要（新設）
+        // J=9:画像リンク3, K=10:画像リンク4, L=11:画像リンク5, M=12:商品概要, N=13:税率
         const COL = {
           cord_ne:     0,
           cord_al:     1,
@@ -596,7 +557,8 @@
           img3:        9,
           img4:        10,
           img5:        11,
-          overview:    12, // M列 (商品概要)
+          overview:    12,
+          tax_rate:    13, // N列 (税率)
         };
 
         const parseGvizData = (data) => {
@@ -627,6 +589,24 @@
             const jan2 = String(getCell(row, COL.jan2)).trim();
             const displayJan = jan1 !== '' ? jan1 : jan2;
 
+            // 【修正：最重要】N列（税率）の読み込み・数値化処理
+            const taxRateRaw = String(getCell(row, COL.tax_rate)).trim();
+            let taxPercent = 10; // デフォルト値は10%
+            if (taxRateRaw !== '') {
+              const num = parseFloat(taxRateRaw.replace(/%/g, ''));
+              if (!isNaN(num)) {
+                // スプシでパーセント設定されている場合、cell.vは0.08等になるため100倍する
+                if (num > 0 && num < 1 && !taxRateRaw.includes('%')) {
+                  taxPercent = Math.round(num * 100);
+                } else {
+                  taxPercent = Math.round(num);
+                }
+              }
+            }
+
+            // 動的税率を元に、税込価格を正しく計算（10%固定のバグを修正）
+            const priceWithTax = Math.floor(priceExTax * (1 + taxPercent / 100));
+
             // 初期読み込み時は標準（lh3ドメイン）形式に変換
             const images = [COL.img1, COL.img2, COL.img3, COL.img4, COL.img5]
               .map(idx => String(getCell(row, idx)).trim())
@@ -635,21 +615,20 @@
 
             const overview = String(getCell(row, COL.overview)).trim();
 
-            // M列の「商品概要」のみを取り出し、ダミー説明文は完全に廃止
-
             result.push({
               title,
               price: priceExTax,
-              price_with_tax: Math.floor(priceExTax * 1.1),
+              price_with_tax: priceWithTax,
+              tax_percent: taxPercent, // 【修正】これを渡し忘れていたため%が空欄になっていました
               stock,
               cord_ne: String(getCell(row, COL.cord_ne)),
               cord_al: String(getCell(row, COL.cord_al)),
               jan1,
               jan2,
-              display_jan: displayJan, // 算出されたJAN表示値
+              display_jan: displayJan,
               images,
               current_image_index: 0,
-              overview // M列：商品概要
+              overview
             });
           }
           return result;
@@ -685,7 +664,6 @@
           }
         };
 
-        // 前の画像
         const prevImage = (product) => {
           if (product.images.length > 1) {
             product.current_image_index = (product.current_image_index - 1 + product.images.length) % product.images.length;
@@ -823,7 +801,7 @@
             if (item.display_jan) {
               msg += `   [JAN: ${item.display_jan}]\n`;
             }
-            msg += `   (単価: ¥${item.price_with_tax.toLocaleString()} 税込${item.tax_percent || 10}%) x ${item.quantity} = ¥${(item.price_with_tax * item.quantity).toLocaleString()} 税込\n\n`;
+            msg += `   (単価: ¥${item.price_with_tax.toLocaleString()} 税込${item.tax_percent}%) x ${item.quantity} = ¥${(item.price_with_tax * item.quantity).toLocaleString()} 税込\n\n`;
           });
           
           msg += `---------------------------\n`;
