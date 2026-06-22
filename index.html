@@ -64,7 +64,7 @@
               <circle cx="58" cy="55" r="4" fill="#3B2216"/>
               <path d="M47 64L53 70M53 64L47 70" stroke="#3B2216" stroke-width="5" stroke-linecap="round"/>
             </svg>
-            テイクオンB面
+            テイクオン・カタログ
           </h1>
         </div>
 
@@ -200,11 +200,10 @@
               <button @click.stop="nextImage(product)" class="px-2 py-0.5 hover:bg-gray-200 rounded text-base active:scale-95 transition-transform" title="次の画像">▶</button>
             </div>
             
-            <!-- 価格タグ -->
-            <div class="absolute top-4 right-4 bg-[#E32915] text-white px-3 py-1.5 font-black text-lg bruna-border rounded-xl bruna-shadow-sm">
-              <div class="text-xs opacity-90 text-center font-bold">税込価格</div>
+            <!-- 価格タグ (税率をスプシから取得して税込価格のみを表示) -->
+            <div class="absolute top-4 right-4 bg-[#E32915] text-white px-3 py-2 font-black text-lg bruna-border rounded-xl bruna-shadow-sm">
+              <div class="text-xs opacity-90 text-center font-bold">税込価格({{ product.tax_percent }}%)</div>
               ¥{{ formatPrice(product.price_with_tax) }}
-              <div class="text-[10px] opacity-75 text-center font-bold">税抜: ¥{{ formatPrice(product.price) }}</div>
             </div>
 
             <!-- 売り切れバッジ -->
@@ -221,12 +220,12 @@
               <!-- 商品名 -->
               <h2 class="text-xl font-black tracking-wide leading-snug">{{ product.title }}</h2>
               
-              <!-- M列：商品概要（商品名の下に配置、これのみを綺麗に表示） -->
+              <!-- M列：商品概要（商品名の下に配置） -->
               <p v-if="product.overview" class="text-sm font-bold text-gray-500 mt-1 mb-4 leading-relaxed">
                 {{ product.overview }}
               </p>
 
-              <!-- ① 現在庫数とJANコードをスッキリ横並びに配置（縦幅を圧縮） -->
+              <!-- 現在庫数とJANコードをスッキリ横並びに配置 -->
               <div class="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-black text-gray-700">
                 <span>
                   現在庫数: <span :class="product.stock <= 5 ? 'text-[#E32915]' : ''">{{ product.stock }}個</span>
@@ -306,7 +305,7 @@
                 JAN: {{ item.display_jan || '-' }}
               </div>
               <div class="flex justify-between text-gray-700">
-                <span>単価: ¥{{ formatPrice(item.price_with_tax) }} (税込)</span>
+                <span>単価: ¥{{ formatPrice(item.price_with_tax) }} (税込{{ item.tax_percent }}%)</span>
                 <span>小計: ¥{{ formatPrice(item.price_with_tax * item.quantity) }}</span>
               </div>
             </div>
@@ -412,6 +411,7 @@
             title: "デモ商品A: テイクオン・おうちのクッション",
             price: 3200,
             price_with_tax: 3520,
+            tax_percent: 10,
             stock: 10,
             cord_ne: "NE-101",
             cord_al: "AL-999",
@@ -426,6 +426,7 @@
             title: "デモ商品B: 飾れるフラワーマグカップ",
             price: 1800,
             price_with_tax: 1980,
+            tax_percent: 10,
             stock: 0,
             cord_ne: "NE-102",
             cord_al: "AL-888",
@@ -634,6 +635,8 @@
 
             const overview = String(getCell(row, COL.overview)).trim();
 
+            // M列の「商品概要」のみを取り出し、ダミー説明文は完全に廃止
+
             result.push({
               title,
               price: priceExTax,
@@ -682,6 +685,7 @@
           }
         };
 
+        // 前の画像
         const prevImage = (product) => {
           if (product.images.length > 1) {
             product.current_image_index = (product.current_image_index - 1 + product.images.length) % product.images.length;
@@ -819,7 +823,7 @@
             if (item.display_jan) {
               msg += `   [JAN: ${item.display_jan}]\n`;
             }
-            msg += `   (単価: ¥${item.price_with_tax.toLocaleString()} 税込) x ${item.quantity} = ¥${(item.price_with_tax * item.quantity).toLocaleString()} 税込\n\n`;
+            msg += `   (単価: ¥${item.price_with_tax.toLocaleString()} 税込${item.tax_percent || 10}%) x ${item.quantity} = ¥${(item.price_with_tax * item.quantity).toLocaleString()} 税込\n\n`;
           });
           
           msg += `---------------------------\n`;
