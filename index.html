@@ -592,154 +592,66 @@
           }
         };
 
-        // Google Visualization API JSON データの安全なマッピングパーサー
+        // Google Visualization API JSON データのパーサー（列固定決め打ち）
+        // A=0:cord_ne, B=1:cord_al, C=2:JAN1, D=3:JAN2, E=4:商品名,
+        // F=5:在庫数, G=6:売価（税抜）, H=7:画像リンク1, I=8:画像リンク2,
+        // J=9:画像リンク3, K=10:画像リンク4, L=11:画像リンク5
+        const COL = {
+          cord_ne:  0,
+          cord_al:  1,
+          jan1:     2,
+          jan2:     3,
+          title:    4,
+          stock:    5,
+          price:    6,
+          img1:     7,
+          img2:     8,
+          img3:     9,
+          img4:     10,
+          img5:     11,
+        };
+
         const parseGvizData = (data) => {
           if (!data || !data.table || !data.table.rows) return [];
-          
-          const cols = data.table.cols;
-          let rows = data.table.rows;
-          
-          // ヘッダー名（カラム名）からインデックスへのマッピングを作成
-          const headerMap = {};
-          let headerFound = false;
-          let headerRowIndex = -1;
-          
-          // 1. スプレッドシートの全行を順番に走査して「商品名」などのキーを含む【本物のヘッダー行】を動的に検出（上部空行・ノイズ対策）
-          for (let i = 0; i < rows.length; i++) {
-            const row = rows[i];
-            if (!row || !row.c) continue;
-            
-            const tempMap = {};
-            let hasProductTitleHeader = false;
-            
-            row.c.forEach((cell, idx) => {
-              if (cell && cell.v !== null && cell.v !== undefined) {
-                // スペースや改行などを完全に除去してキーを正規化
-                const val = String(cell.v).trim().replace(/[\s　\r\n]/g, '');
-                tempMap[val] = idx;
-                
-                // 代表的な商品名ヘッダーのキーワード候補
-                if (['商品名', '商品', 'title', 'name'].includes(val)) {
-                  hasProductTitleHeader = true;
-                }
-              }
-            });
-            
-            if (hasProductTitleHeader) {
-              // 表記揺れマッピング用にコピーし、ヘッダー行を確定
-              Object.assign(headerMap, tempMap);
-              headerFound = true;
-              headerRowIndex = i;
-              break;
-            }
-          }
 
-          // 2. もし動的スキャンでヘッダーが見つからなかった場合のフォールバック（APIラベルフォールバック）
-          if (!headerFound) {
-            let hasLabels = false;
-            cols.forEach((col, idx) => {
-              if (col && col.label) {
-                const label = String(col.label).trim().replace(/[\s　\r\n]/g, '');
-                headerMap[label] = idx;
-                hasLabels = true;
-              }
-            });
-
-            const hasRequiredHeader = headerMap['商品名'] !== undefined || headerMap['title'] !== undefined || headerMap['name'] !== undefined;
-            
-            if (!hasLabels || !hasRequiredHeader) {
-              if (rows.length > 0 && rows[0].c) {
-                const firstRow = rows[0].c;
-                firstRow.forEach((cell, idx) => {
-                  if (cell && cell.v !== null && cell.v !== undefined) {
-                    const label = String(cell.v).trim().replace(/[\s　\r\n]/g, '');
-                    headerMap[label] = idx;
-                  }
-                });
-                headerFound = true;
-                headerRowIndex = 0;
-              }
-            } else {
-              headerFound = true;
-              headerRowIndex = -1; // APIのラベルをヘッダーとして使用するため、データ行は0行目から開始
-            }
-          }
-
-          if (!headerFound && Object.keys(headerMap).length === 0) return [];
-
+          // 1行目はヘッダーなのでスキップ（index=0）、2行目以降がデータ
+          const rows = data.table.rows; // gviz APIはヘッダーをcols.labelで返すためrowsは全行データ
           const result = [];
-          
-          // ヘッダー行の次の行からデータを実質処理
-          const startDataRowIndex = headerRowIndex + 1;
-          
-          for (let i = startDataRowIndex; i < rows.length; i++) {
-            const row = rows[i];
+
+          const getCell = (row, colIdx) => {
+            if (!row.c || colIdx >= row.c.length) return '';
+            const cell = row.c[colIdx];
+            if (!cell || cell.v === null || cell.v === undefined) return '';
+            return cell.v;
+          };
+
+          for (const row of rows) {
             if (!row || !row.c) continue;
-            
-            // 複数の候補キーから、表記揺れを吸収しつつ部分一致も含めて値を取得する関数
-            const getValueByKeys = (targetKeys) => {
-              const normalize = (str) => {
-                return str.toLowerCase()
-                          .replace(/[\s　\r\n]/g, '')
-                          .replace(/（/g, '(')
-                          .replace(/）/g, ')');
-              };
-              
-              const normalizedTargets = targetKeys.map(k => normalize(k));
-              
-              for (const [key, idx] of Object.entries(headerMap)) {
-                const normalizedKey = normalize(key);
-                // カラム名がターゲットと完全一致するか、あるいはターゲットを含んでいるかチェック
-                const isMatch = normalizedTargets.some(t => normalizedKey === t || normalizedKey.includes(t));
-                if (isMatch) {
-                  if (idx !== undefined && idx < row.c.length && row.c[idx]) {
-                    const cell = row.c[idx];
-                    if (cell.v !== null && cell.v !== undefined) {
-                      return cell.v;
-                    }
-                  }
-                }
-              }
-              return '';
-            };
 
-            const title = String(getValueByKeys(['商品名', 'title', 'name'])).trim();
-            if (!title) continue; // 商品名が入っていない無効な空行はスキップ
+            const title = String(getCell(row, COL.title)).trim();
+            if (!title) continue; // 商品名が空の行はスキップ
 
-            const priceVal = getValueByKeys(['売価(税抜)', '売価（税抜）', '売価', 'price', 'price_ex_tax']);
-            const priceExTax = parseInt(priceVal) || 0;
-            
-            const stockVal = getValueByKeys(['在庫数', '在庫', 'stock']);
-            const stock = (stockVal === '' || stockVal === undefined) ? 999 : (parseInt(stockVal) || 0);
+            const priceExTax = parseInt(getCell(row, COL.price)) || 0;
+            const stockVal = getCell(row, COL.stock);
+            const stock = (stockVal === '' || stockVal === null) ? 999 : (parseInt(stockVal) || 0);
 
-            const cord_ne = String(getValueByKeys(['cord_ne', 'code_ne', 'NEコード', 'ne']));
-            const cord_al = String(getValueByKeys(['cord_al', 'code_al', 'ALコード', 'al']));
-            const jan1 = String(getValueByKeys(['JAN1', 'jan1', 'JANコード1']));
-            const jan2 = String(getValueByKeys(['JAN2', 'jan2', 'JANコード2']));
-
-            // 画像リンク1〜5の動的読み込み
-            const img1 = String(getValueByKeys(['画像リンク1', '画像1', 'image1', 'image_url1']));
-            const img2 = String(getValueByKeys(['画像リンク2', '画像2', 'image2', 'image_url2']));
-            const img3 = String(getValueByKeys(['画像リンク3', '画像3', 'image3', 'image_url3']));
-            const img4 = String(getValueByKeys(['画像リンク4', '画像4', 'image4', 'image_url4']));
-            const img5 = String(getValueByKeys(['画像リンク5', '画像5', 'image5', 'image_url5']));
-
-            const images = [img1, img2, img3, img4, img5]
-              .filter(url => url.trim() !== '')
+            const images = [COL.img1, COL.img2, COL.img3, COL.img4, COL.img5]
+              .map(idx => String(getCell(row, idx)).trim())
+              .filter(url => url !== '')
               .map(url => convertDriveUrl(url));
 
             result.push({
               title,
               price: priceExTax,
-              price_with_tax: Math.floor(priceExTax * 1.1), // 10%税込
+              price_with_tax: Math.floor(priceExTax * 1.1),
               stock,
-              cord_ne,
-              cord_al,
-              jan1,
-              jan2,
+              cord_ne: String(getCell(row, COL.cord_ne)),
+              cord_al: String(getCell(row, COL.cord_al)),
+              jan1:    String(getCell(row, COL.jan1)),
+              jan2:    String(getCell(row, COL.jan2)),
               images,
               current_image_index: 0,
-              description: String(getValueByKeys(['説明', '説明文', 'desc', 'description']) || `${title} の詳細情報です。`)
+              description: `${title} の詳細情報です。`
             });
           }
           return result;
