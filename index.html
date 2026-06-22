@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>テイクオンB面</title>
+  <title>テイクオン</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts: Zen Maru Gothic (温かみのある丸ゴシック) -->
@@ -20,7 +20,7 @@
       font-family: 'Zen Maru Gothic', sans-serif;
       background-color: #FAF6EE; /* 温かみのあるオフホワイト */
     }
-    /* ブルーナ特有の太い線の表現 */
+    /* ディック・ブルーナ風の太い線の表現 */
     .bruna-border {
       border: 4px solid #3B2216; /* 深いブラウンの輪郭線 */
     }
@@ -47,8 +47,8 @@
 
   <div id="app" class="min-h-screen flex flex-col pb-24">
     
-    <!-- ヘッダー（ブルーナ・イエローの帯） -->
-    <header class="bg-[#FFCD00] bruna-border-b py-6 px-4 text-center sticky top-0 z-10 shadow-sm">
+    <!-- ヘッダー（イエローの帯 - 追随しないよう非固定化に変更） -->
+    <header class="bg-[#FFCD00] bruna-border-b py-6 px-4 text-center shadow-sm">
       <div class="max-w-4xl mx-auto flex justify-between items-center">
         <!-- ダミーの空白（バランス用） -->
         <div class="w-10"></div>
@@ -65,6 +65,7 @@
               <path d="M47 64L53 70M53 64L47 70" stroke="#3B2216" stroke-width="5" stroke-linecap="round"/>
             </svg>
             テイクオンB面
+          </h1>
         </div>
 
         <!-- 設定ボタン -->
@@ -152,14 +153,15 @@
           <!-- 商品画像エリア（複数画像カルーセル対応） -->
           <div class="relative bg-white bruna-border-b h-72 flex items-center justify-center overflow-hidden">
             
-            <!-- カルーセルメイン画像 -->
+            <!-- カルーセルメイン画像（スマートフォン対応属性を維持） -->
             <img v-if="product.images && product.images.length > 0 && product.images[product.current_image_index]" 
                  :src="product.images[product.current_image_index]" 
                  :alt="product.title" 
                  class="object-contain w-full h-full p-4 transition-all duration-300" 
+                 referrerpolicy="no-referrer"
                  @error="onImageError(product, product.current_image_index)">
             
-            <!-- 代替のブルーナ風アイコン（画像が1枚もない・読み込めない場合） -->
+            <!-- 代替のキャラクター風アイコン（画像がない場合） -->
             <div v-else class="w-full h-full flex items-center justify-center" :class="getIllustrationBg(index)">
               <svg class="w-32 h-32 opacity-90" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <g v-if="index % 4 === 0">
@@ -198,7 +200,7 @@
               <button @click.stop="nextImage(product)" class="px-2 py-0.5 hover:bg-gray-200 rounded text-base active:scale-95 transition-transform" title="次の画像">▶</button>
             </div>
             
-            <!-- 価格タグ (税込・税抜併記) -->
+            <!-- 価格タグ -->
             <div class="absolute top-4 right-4 bg-[#E32915] text-white px-3 py-1.5 font-black text-lg bruna-border rounded-xl bruna-shadow-sm">
               <div class="text-xs opacity-90 text-center font-bold">税込価格</div>
               ¥{{ formatPrice(product.price_with_tax) }}
@@ -216,25 +218,29 @@
           <!-- 商品説明＆コード・在庫状況 -->
           <div class="p-5 flex-grow flex flex-col justify-between bg-white">
             <div>
-              <h2 class="text-xl font-black mb-2 tracking-wide leading-snug">{{ product.title }}</h2>
+              <!-- 商品名 -->
+              <h2 class="text-xl font-black tracking-wide leading-snug">{{ product.title }}</h2>
               
-              <!-- 各種コード表示（スプシカラムに連動） -->
+              <!-- M列：商品概要（商品名の下に配置） -->
+              <p v-if="product.overview" class="text-xs font-bold text-gray-500 mt-1 mb-3 leading-relaxed">
+                {{ product.overview }}
+              </p>
+              
+              <!-- 商品詳細説明 -->
+              <p class="text-sm font-medium opacity-85 leading-relaxed mb-4">
+                {{ product.description }}
+              </p>
+              
+              <!-- 各種コード表示（コード不要・JANは最適化表示） -->
               <div class="bg-[#FAF6EE] bruna-border rounded-xl p-3 mb-4 text-xs font-bold space-y-1">
-                <div class="flex justify-between border-b border-dashed border-[#3B2216]/20 pb-1">
-                  <span class="text-gray-600">コード(NE/AL)</span>
-                  <span class="text-[#3B2216]">{{ product.cord_ne || '-' }} / {{ product.cord_al || '-' }}</span>
-                </div>
-                <div class="flex justify-between">
+                <div class="flex justify-between items-center">
                   <span class="text-gray-600">JANコード</span>
-                  <span class="text-[#3B2216]">{{ product.jan1 || '-' }} {{ product.jan2 ? ' / ' + product.jan2 : '' }}</span>
+                  <span class="text-[#3B2216]">{{ product.display_jan || '-' }}</span>
                 </div>
               </div>
 
-              <!-- 在庫状況表示 -->
+              <!-- 在庫状況表示（お取り寄せ可能バッジを削除、現在庫数のみ表示） -->
               <div class="mb-4 flex items-center justify-between">
-                <span class="text-xs font-black px-2 py-1 rounded bruna-border" :class="product.stock > 0 ? 'bg-[#008940] text-white' : 'bg-gray-200 text-gray-500'">
-                  {{ product.stock > 0 ? 'お取り寄せ可能' : '只今品切れ中' }}
-                </span>
                 <span class="text-sm font-black text-gray-700">
                   現在庫数: <span class="text-base" :class="product.stock <= 5 ? 'text-[#E32915]' : ''">{{ product.stock }} 個</span>
                 </span>
@@ -307,7 +313,7 @@
                 <span class="text-[#E32915]">x{{ item.quantity }}</span>
               </div>
               <div class="text-[10px] text-gray-500">
-                コード: {{ item.cord_ne || '-' }} / {{ item.cord_al || '-' }} | JAN: {{ item.jan1 || '-' }}
+                JAN: {{ item.display_jan || '-' }}
               </div>
               <div class="flex justify-between text-gray-700">
                 <span>単価: ¥{{ formatPrice(item.price_with_tax) }} (税込)</span>
@@ -373,7 +379,7 @@
     <!-- フッター -->
     <footer class="bg-[#5D3725] text-white bruna-border-t py-8 px-4 text-center mt-auto">
       <div class="max-w-4xl mx-auto space-y-2 text-sm font-bold opacity-90">
-        <p>© Bruna Market. All rights reserved.</p>
+        <p>© テイクオン. All rights reserved.</p>
         <p class="text-xs opacity-75">このカタログはGoogleスプレッドシートをもとに完全自動更新されています。</p>
       </div>
     </footer>
@@ -414,7 +420,7 @@
         // デモデータ (スプシ読み込みエラー時等のフォールバック用)
         const demoProducts = [
           {
-            title: "デモ商品A: ブルーナ・おうちのクッション",
+            title: "デモ商品A: テイクオン・おうちのクッション",
             price: 3200,
             price_with_tax: 3520,
             stock: 10,
@@ -422,9 +428,11 @@
             cord_al: "AL-999",
             jan1: "4901234567890",
             jan2: "",
+            display_jan: "4901234567890",
             images: [],
             current_image_index: 0,
-            description: "お部屋を彩る、ブルーナカラーの可愛いクッションです。"
+            overview: "テイクオンおなじみの丸ゴシック調で構成された可愛いクッションです。",
+            description: "お部屋を彩る、テイクオンカラーの可愛いクッションです。"
           },
           {
             title: "デモ商品B: 飾れるフラワーマグカップ",
@@ -433,10 +441,12 @@
             stock: 0,
             cord_ne: "NE-102",
             cord_al: "AL-888",
-            jan1: "4901234567891",
+            jan1: "",
             jan2: "4901234567892",
+            display_jan: "4901234567892",
             images: [],
             current_image_index: 0,
+            overview: "JAN1が空欄のため、JAN2のデータが自動フォールバック表示されています。",
             description: "売り切れ状態の表示デモ。在庫数が「0」に設定されています。"
           }
         ];
@@ -488,7 +498,7 @@
             id = idMatch[1];
           }
 
-          // URL全体（フラグメントを含む）からsheet名やgidを頑健に抽出
+          // URL全体からsheet名やgidを頑健に抽出
           const decodedUrl = decodeURIComponent(url);
           const sheetMatch = decodedUrl.match(/[?&#]sheet=([^&]+)/);
           const gidMatch = decodedUrl.match(/[?&#]gid=([^&]+)/);
@@ -496,7 +506,6 @@
           if (sheetMatch) {
             sheet = sheetMatch[1];
           } else if (gidMatch) {
-            // gid=0以外の場合は、Visualization APIにgidそのものを優先指定させるためsheet名をリセットします
             if (gidMatch[1] !== '0') {
               sheet = '';
             }
@@ -505,13 +514,11 @@
           return { id, sheet, gid: gidMatch ? gidMatch[1] : '' };
         };
 
-        // 【最重要】CORSエラーを100%安全にバイパスするためのJSONP通信処理
+        // CORSエラーを100%安全にバイパスするためのJSONP通信処理
         const fetchSpreadsheetJsonp = (spreadsheetId, sheetName, gid) => {
           return new Promise((resolve, reject) => {
-            // 重複しないユニークな一時的グローバル関数名を作成
             const callbackName = 'gvizCallback_' + Math.random().toString(36).substring(2, 9);
             
-            // タイムアウト設定 (8秒)
             const timeoutId = setTimeout(() => {
               cleanup();
               reject(new Error('スプレッドシートの応答がタイムアウトしました。共有権限（リンクを知っている全員が閲覧者）をご確認ください。'));
@@ -524,13 +531,11 @@
               if (script) script.remove();
             };
 
-            // グローバルスコープにコールバックを登録してJSONP応答を受け取る
             window[callbackName] = (data) => {
               cleanup();
               resolve(data);
             };
 
-            // 動的にスクリプトタグを構築してCORS制限を完全回避
             const script = document.createElement('script');
             script.id = callbackName;
             
@@ -540,14 +545,14 @@
             } else if (gid) {
               srcUrl += `&gid=${gid}`;
             } else {
-              srcUrl += `&sheet=%E5%95%86%E5%93%81`; // デフォルトフォールバック
+              srcUrl += `&sheet=%E5%95%86%E5%93%81`;
             }
 
             script.src = srcUrl;
             
             script.onerror = () => {
               cleanup();
-              reject(new Error('データの読み込み中にエラー（ネットワーク、あるいは共有設定アクセス制限）が発生しました。'));
+              reject(new Error('データの読み込み中にエラーが発生しました。'));
             };
 
             document.head.appendChild(script);
@@ -562,14 +567,11 @@
           const { id, sheet, gid } = extractSpreadsheetDetails(spreadsheetUrl.value);
 
           try {
-            // JSONPでデータを取得
             const gvizData = await fetchSpreadsheetJsonp(id, sheet, gid);
-            
-            // 取得したJSONPデータをパース
             const parsedData = parseGvizData(gvizData);
 
             if (parsedData.length === 0) {
-              throw new Error('スプレッドシート内から対象の商品行を検出できませんでした。列のヘッダー定義（「商品名」「売価(税抜)」「画像リンク1」など）に誤りがないかご確認ください。');
+              throw new Error('スプレッドシート内から対象の商品行を検出できませんでした。');
             }
 
             products.value = parsedData;
@@ -577,7 +579,6 @@
           } catch (err) {
             console.error(err);
             error.value = err.message || 'データ接続中に問題が発生しました。';
-            // 安全なリカバリとしてデモ商品データを画面にロード
             products.value = [...demoProducts];
             resetCart();
           } finally {
@@ -593,27 +594,27 @@
         // Google Visualization API JSON データのパーサー（列固定決め打ち）
         // A=0:cord_ne, B=1:cord_al, C=2:JAN1, D=3:JAN2, E=4:商品名,
         // F=5:在庫数, G=6:売価（税抜）, H=7:画像リンク1, I=8:画像リンク2,
-        // J=9:画像リンク3, K=10:画像リンク4, L=11:画像リンク5
+        // J=9:画像リンク3, K=10:画像リンク4, L=11:画像リンク5, M=12:商品概要（新設）
         const COL = {
-          cord_ne:  0,
-          cord_al:  1,
-          jan1:     2,
-          jan2:     3,
-          title:    4,
-          stock:    5,
-          price:    6,
-          img1:     7,
-          img2:     8,
-          img3:     9,
-          img4:     10,
-          img5:     11,
+          cord_ne:     0,
+          cord_al:     1,
+          jan1:        2,
+          jan2:        3,
+          title:       4,
+          stock:       5,
+          price:       6,
+          img1:        7,
+          img2:        8,
+          img3:        9,
+          img4:        10,
+          img5:        11,
+          overview:    12, // M列 (商品概要)
         };
 
         const parseGvizData = (data) => {
           if (!data || !data.table || !data.table.rows) return [];
 
-          // 1行目はヘッダーなのでスキップ（index=0）、2行目以降がデータ
-          const rows = data.table.rows; // gviz APIはヘッダーをcols.labelで返すためrowsは全行データ
+          const rows = data.table.rows;
           const result = [];
 
           const getCell = (row, colIdx) => {
@@ -633,10 +634,18 @@
             const stockVal = getCell(row, COL.stock);
             const stock = (stockVal === '' || stockVal === null) ? 999 : (parseInt(stockVal) || 0);
 
+            // JANコードの判定ロジック: JAN1を優先、JAN1が空ならJAN2を表示
+            const jan1 = String(getCell(row, COL.jan1)).trim();
+            const jan2 = String(getCell(row, COL.jan2)).trim();
+            const displayJan = jan1 !== '' ? jan1 : jan2;
+
+            // 初期読み込み時は標準（lh3ドメイン）形式に変換
             const images = [COL.img1, COL.img2, COL.img3, COL.img4, COL.img5]
               .map(idx => String(getCell(row, idx)).trim())
               .filter(url => url !== '')
-              .map(url => convertDriveUrl(url));
+              .map(url => convertDriveUrl(url, 'lh3'));
+
+            const overview = String(getCell(row, COL.overview)).trim();
 
             result.push({
               title,
@@ -645,23 +654,37 @@
               stock,
               cord_ne: String(getCell(row, COL.cord_ne)),
               cord_al: String(getCell(row, COL.cord_al)),
-              jan1:    String(getCell(row, COL.jan1)),
-              jan2:    String(getCell(row, COL.jan2)),
+              jan1,
+              jan2,
+              display_jan: displayJan, // 算出されたJAN表示値
               images,
               current_image_index: 0,
+              overview, // M列：商品概要
               description: `${title} の詳細情報です。`
             });
           }
           return result;
         };
 
-        // Googleドライブ画像をHTML上で直に読み込める形式へ変換
-        const convertDriveUrl = (url) => {
+        // Googleドライブ画像をスマートフォンでもブロックされにくい形式に高度に変換
+        const convertDriveUrl = (url, type = 'lh3') => {
           if (!url) return '';
-          const regExp = /\/file\/d\/([a-zA-Z0-9_-]+)/;
-          const matches = url.match(regExp);
-          if (matches && matches[1]) {
-            return `https://lh3.googleusercontent.com/d/${matches[1]}`;
+          
+          let fileId = '';
+          const fileDMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+          const idParamMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+          
+          if (fileDMatch && fileDMatch[1]) {
+            fileId = fileDMatch[1];
+          } else if (idParamMatch && idParamMatch[1]) {
+            fileId = idParamMatch[1];
+          }
+          
+          if (fileId) {
+            if (type === 'uc') {
+              return `https://drive.google.com/uc?export=view&id=${fileId}`;
+            }
+            return `https://lh3.googleusercontent.com/d/${fileId}`;
           }
           return url;
         };
@@ -738,8 +761,19 @@
           }
         };
 
-        // 画像フェッチ失敗時のハンドラー
+        // スマホ対応：画像ロード失敗時のリトライ・フォールバック機構
         const onImageError = (product, imgIndex) => {
+          const currentUrl = product.images[imgIndex];
+          
+          if (currentUrl && currentUrl.includes('lh3.googleusercontent.com')) {
+            const fileIdMatch = currentUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+            if (fileIdMatch && fileIdMatch[1]) {
+              const retryUrl = convertDriveUrl(fileIdMatch[1], 'uc');
+              product.images[imgIndex] = retryUrl;
+              return;
+            }
+          }
+          
           product.images.splice(imgIndex, 1);
           if (product.current_image_index >= product.images.length) {
             product.current_image_index = 0;
@@ -779,9 +813,9 @@
           return true;
         };
 
-        // 注文文面の構築
+        // 注文文面の構築（テイクオンマーケット＆JAN連携に最適化）
         const buildOrderMessage = () => {
-          let msg = `🌟 【ブルーナ・マーケット 注文依頼】 🌟\n`;
+          let msg = `🌟 【テイクオン・マーケット 注文依頼】 🌟\n`;
           msg += `---------------------------\n`;
           msg += `👤 お名前: ${customerInfo.value.name}\n`;
           msg += `📞 連絡先: ${customerInfo.value.contact}\n`;
@@ -796,9 +830,8 @@
           
           cartItems.value.forEach(item => {
             msg += `・ ${item.title}\n`;
-            msg += `   [コード: ${item.cord_ne || '-'} / ${item.cord_al || '-'}]\n`;
-            if (item.jan1) {
-              msg += `   [JAN: ${item.jan1} ${item.jan2 ? '/ ' + item.jan2 : ''}]\n`;
+            if (item.display_jan) {
+              msg += `   [JAN: ${item.display_jan}]\n`;
             }
             msg += `   (単価: ¥${item.price_with_tax.toLocaleString()} 税込) x ${item.quantity} = ¥${(item.price_with_tax * item.quantity).toLocaleString()} 税込\n\n`;
           });
@@ -815,7 +848,7 @@
           if (!validateForm()) return;
           const text = buildOrderMessage();
           const targetEmail = emailDestination.value;
-          const mailtoUrl = `mailto:${targetEmail}?subject=${encodeURIComponent('ブルーナ・マーケット商品注文申込み')}&body=${encodeURIComponent(text)}`;
+          const mailtoUrl = `mailto:${targetEmail}?subject=${encodeURIComponent('テイクオン商品注文申込み')}&body=${encodeURIComponent(text)}`;
           window.location.href = mailtoUrl;
         };
 
