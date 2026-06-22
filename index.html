@@ -30,7 +30,7 @@
     .bruna-border-b {
       border-bottom: 4px solid #3B2216;
     }
-    /* 絵本風の立体感（ネオ・ブルータリズム風のフラットシャドウ） */
+    /* 絵本風の立体感（ネオ・ブルータリズム風 of フラットシャドウ） */
     .bruna-shadow {
       box-shadow: 6px 6px 0px 0px #3B2216;
     }
@@ -47,7 +47,7 @@
 
   <div id="app" class="min-h-screen flex flex-col pb-24">
     
-    <!-- ヘッダー（イエローの帯 - 追随しないよう非固定化に変更） -->
+    <!-- ヘッダー（追随しない非固定化仕様） -->
     <header class="bg-[#FFCD00] bruna-border-b py-6 px-4 text-center shadow-sm">
       <div class="max-w-4xl mx-auto flex justify-between items-center">
         <!-- ダミーの空白（バランス用） -->
@@ -66,7 +66,6 @@
             </svg>
             テイクオンB面
           </h1>
-          <p class="text-xs md:text-sm font-bold mt-1 opacity-80">スプレッドシートから完全自動同期される注文システム</p>
         </div>
 
         <!-- 設定ボタン -->
@@ -222,28 +221,18 @@
               <!-- 商品名 -->
               <h2 class="text-xl font-black tracking-wide leading-snug">{{ product.title }}</h2>
               
-              <!-- M列：商品概要（商品名の下に配置） -->
-              <p v-if="product.overview" class="text-xs font-bold text-gray-500 mt-1 mb-3 leading-relaxed">
+              <!-- M列：商品概要（商品名の下に配置、これのみを綺麗に表示） -->
+              <p v-if="product.overview" class="text-sm font-bold text-gray-500 mt-1 mb-4 leading-relaxed">
                 {{ product.overview }}
               </p>
-              
-              <!-- 商品詳細説明 -->
-              <p class="text-sm font-medium opacity-85 leading-relaxed mb-4">
-                {{ product.description }}
-              </p>
-              
-              <!-- 各種コード表示（コード不要・JANは最適化表示） -->
-              <div class="bg-[#FAF6EE] bruna-border rounded-xl p-3 mb-4 text-xs font-bold space-y-1">
-                <div class="flex justify-between items-center">
-                  <span class="text-gray-600">JANコード</span>
-                  <span class="text-[#3B2216]">{{ product.display_jan || '-' }}</span>
-                </div>
-              </div>
 
-              <!-- 在庫状況表示（お取り寄せ可能バッジを削除、現在庫数のみ表示） -->
-              <div class="mb-4 flex items-center justify-between">
-                <span class="text-sm font-black text-gray-700">
-                  現在庫数: <span class="text-base" :class="product.stock <= 5 ? 'text-[#E32915]' : ''">{{ product.stock }} 個</span>
+              <!-- ① 現在庫数とJANコードをスッキリ横並びに配置（縦幅を圧縮） -->
+              <div class="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-black text-gray-700">
+                <span>
+                  現在庫数: <span :class="product.stock <= 5 ? 'text-[#E32915]' : ''">{{ product.stock }}個</span>
+                </span>
+                <span v-if="product.display_jan" class="text-gray-500">
+                  JAN: <span class="text-[#3B2216] font-mono">{{ product.display_jan }}</span>
                 </span>
               </div>
             </div>
@@ -378,10 +367,9 @@
     </transition>
 
     <!-- フッター -->
-    <footer class="bg-[#5D3725] text-white bruna-border-t py-8 px-4 text-center mt-auto">
-      <div class="max-w-4xl mx-auto space-y-2 text-sm font-bold opacity-90">
+    <footer class="bg-[#5D3725] text-white bruna-border-t py-6 px-4 text-center mt-auto">
+      <div class="max-w-4xl mx-auto text-sm font-bold opacity-90">
         <p>© テイクオン. All rights reserved.</p>
-        <p class="text-xs opacity-75">このカタログはGoogleスプレッドシートをもとに完全自動更新されています。</p>
       </div>
     </footer>
 
@@ -432,8 +420,7 @@
             display_jan: "4901234567890",
             images: [],
             current_image_index: 0,
-            overview: "テイクオンおなじみの丸ゴシック調で構成された可愛いクッションです。",
-            description: "お部屋を彩る、テイクオンカラーの可愛いクッションです。"
+            overview: "テイクオンおなじみの丸ゴシック調で構成された可愛いクッションです。"
           },
           {
             title: "デモ商品B: 飾れるフラワーマグカップ",
@@ -447,8 +434,7 @@
             display_jan: "4901234567892",
             images: [],
             current_image_index: 0,
-            overview: "JAN1が空欄のため、JAN2のデータが自動フォールバック表示されています。",
-            description: "売り切れ状態の表示デモ。在庫数が「0」に設定されています。"
+            overview: "JAN1が空欄のため、JAN2のデータが自動フォールバック表示されています。"
           }
         ];
 
@@ -660,8 +646,7 @@
               display_jan: displayJan, // 算出されたJAN表示値
               images,
               current_image_index: 0,
-              overview, // M列：商品概要
-              description: `${title} の詳細情報です。`
+              overview // M列：商品概要
             });
           }
           return result;
