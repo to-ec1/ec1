@@ -1,169 +1,921 @@
-/**
- * Googleドライブの指定フォルダ内の画像をスキャンし、
- * ファイル名（JANコード + アンダースコア + 連番）から
- * スプレッドシートの「商品」シートへ画像リンクを自動転記するスクリプトです。
- * * 【クリーン設計・動作仕様】
- * ・スプシ側に該当のJANコードが存在しない画像ファイルは自動的に安全にスルー（無視）します。
- * ・スプシ側の該当セルの画像リンクがすでに埋まっている（空欄ではない）場合も、何もしません。
- * ・Googleドライブの画像ファイルを移動させたり、名前や説明などの情報を裏で書き換えることはありません。
- * ・そのため、スプシのURLを手動で消すだけで、いつでも安全に画像の再転記（やり直し）が可能です。
- */
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- スマホがJANコードを電話番号と誤認して勝手に下線を引いたり発信しようとするのを完全に防ぎます -->
+  <meta name="format-detection" content="telephone=no">
+  <title>テイクオン</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Zen Maru Gothic (温かみのある丸ゴシック) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Vue.js 3 -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
-// ==========================================
-// ⚙️ 初期設定（ご提示のフォルダIDを設定済み）
-// ==========================================
-const SOURCE_FOLDER_ID = "1D65ZFKojNHLAE-tTOwxJhdrszIlrgsJg"; // 画像が置かれる対象フォルダのID
+  <style>
+    body {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      background-color: #FAF6EE; /* 温かみのあるオフホワイト */
+    }
+    /* ディック・ブルーナ風の太い線の表現 */
+    .bruna-border {
+      border: 4px solid #3B2216; /* 深いブラウンの輪郭線 */
+    }
+    .bruna-border-t {
+      border-top: 4px solid #3B2216;
+    }
+    .bruna-border-b {
+      border-bottom: 4px solid #3B2216;
+    }
+    /* 絵本風の立体感（ネオ・ブルータリズム風 of フラットシャドウ） */
+    .bruna-shadow {
+      box-shadow: 6px 6px 0px 0px #3B2216;
+    }
+    .bruna-shadow-sm {
+      box-shadow: 4px 4px 0px 0px #3B2216;
+    }
+    .bruna-shadow-active:active {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0px 0px #3B2216;
+    }
 
-function syncDriveImagesToSpreadsheet() {
-  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = spreadsheet.getSheetByName("商品");
-  if (!sheet) {
-    Logger.log("❌ エラー: 「商品」シートが見つかりませんでした。処理を中断します。");
-    return;
-  }
+    /* 体・足の出現アニメーション */
+    .character-body {
+      opacity: 0;
+      transform: scaleY(0);
+      transform-origin: top;
+      transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .character-body.active {
+      opacity: 1;
+      transform: scaleY(1);
+    }
 
-  // 1. スプシの各列のインデックス（列番号）を動的にスキャンして特定
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  let jan1ColIdx = -1;
-  let jan2ColIdx = -1;
-  const imgColIndices = {}; // { 1: 列番号, 2: 列番号, ... 5: 列番号 }
-
-  for (let i = 0; i < headers.length; i++) {
-    const h = String(headers[i]).trim().replace(/[\s　]/g, '');
-    if (h === "JAN1" || h === "jan1" || h === "JANコード1") {
-      jan1ColIdx = i + 1;
-    } else if (h === "JAN2" || h === "jan2" || h === "JANコード2") {
-      jan2ColIdx = i + 1;
+    /* トコトコ左右に揺れて歩く歩行アニメーション */
+    @keyframes walk-wobble {
+      0% { transform: rotate(0deg) translateY(0); }
+      25% { transform: rotate(-5deg) translateY(-2.5px); }
+      50% { transform: rotate(0deg) translateY(0); }
+      75% { transform: rotate(5deg) translateY(-2.5px); }
+      100% { transform: rotate(0deg) translateY(0); }
     }
     
-    // 「画像リンク1」〜「画像リンク5」の列番号を特定
-    for (let num = 1; num <= 5; num++) {
-      if (h === "画像リンク" + num || h === "画像" + num || h === "image" + num || h === "image_url" + num) {
-        imgColIndices[num] = i + 1;
-      }
+    .walking-animation {
+      animation: walk-wobble 0.35s infinite ease-in-out;
     }
-  }
+  </style>
+</head>
+<body class="text-[#3B2216] selection:bg-[#FFCD00]">
 
-  if (jan1ColIdx === -1 && jan2ColIdx === -1) {
-    Logger.log("❌ エラー: JANコードの列（JAN1 または JAN2）を特定できませんでした。");
-    return;
-  }
-
-  // 2. Googleドライブ対象フォルダの取得
-  let sourceFolder;
-  try {
-    sourceFolder = DriveApp.getFolderById(SOURCE_FOLDER_ID);
-  } catch (e) {
-    Logger.log("❌ エラー: フォルダIDが正しくありません: " + e.toString());
-    return;
-  }
-
-  // 3. フォルダ内のファイルの取得
-  const files = sourceFolder.getFiles();
-  let processedCount = 0;
-
-  // スプシデータの全取得
-  const lastRow = sheet.getLastRow();
-  if (lastRow < 2) {
-    Logger.log("ℹ️ 情報: スプレッドシートに商品データ行が存在しません。");
-    return;
-  }
-
-  // getDisplayValues() で取得することで、指数表記(4.57E+12など)の文字化けを100%防ぎ、
-  // 画面に見えているままのプレーンな「JANコード文字列」をキャッシュします。
-  const jan1Values = jan1ColIdx !== -1 ? sheet.getRange(2, jan1ColIdx, lastRow - 1, 1).getDisplayValues().map(r => String(r[0]).trim()) : [];
-  const jan2Values = jan2ColIdx !== -1 ? sheet.getRange(2, jan2ColIdx, lastRow - 1, 1).getDisplayValues().map(r => String(r[0]).trim()) : [];
-
-  // 各画像セルの入力状況を一括キャッシュ
-  const imgValuesCache = {};
-  for (let num = 1; num <= 5; num++) {
-    const colIdx = imgColIndices[num];
-    if (colIdx) {
-      imgValuesCache[num] = sheet.getRange(2, colIdx, lastRow - 1, 1).getDisplayValues().map(r => String(r[0]).trim());
-    }
-  }
-
-  Logger.log("🔍 スキャン開始: ドライブフォルダ内の全画像ファイルを検証します...");
-
-  while (files.hasNext()) {
-    const file = files.next();
-    const fullName = file.getName();
+  <div id="app" class="min-h-screen flex flex-col pb-24">
     
-    // フォルダ自体のスキャンはスルー
-    if (file.getMimeType() === MimeType.FOLDER) continue;
-
-    // ファイル名から拡張子を切り離す（例: "457333660167_01.jpg" -> "457333660167_01"）
-    const lastDotIdx = fullName.lastIndexOf('.');
-    if (lastDotIdx === -1) {
-      Logger.log("⚠️ スルー（拡張子なし）: " + fullName);
-      continue; 
-    }
-    const nameWithoutExt = fullName.substring(0, lastDotIdx);
-    
-    // 【アンダーバールール対応：JANコード + アンダースコア(_) + 01〜05（連番）】
-    // 例: "457333660167_01"、ハイフン区切りやブレも一部安全許容する正規表現
-    const match = nameWithoutExt.match(/^(\d+)[-_]?(0?[1-5])$/);
-    
-    if (!match) {
-      Logger.log("⚠️ スルー（ルール不一致）: ファイル名が 'JAN_01' などの命名規則に合致しません: " + fullName);
-      continue;
-    }
-
-    const fileJan = match[1]; // JANコード部分
-    const imgNumber = parseInt(match[2], 10); // 画像番号 (1〜5)
-
-    // スプレッドシート側の対応列が存在するか確認
-    const targetImgColIdx = imgColIndices[imgNumber];
-    if (!targetImgColIdx) {
-      Logger.log("⚠️ スルー（列なし）: 「画像リンク" + imgNumber + "」に対応する列がスプシに存在しません: " + fullName);
-      continue;
-    }
-
-    let isJanFoundInSheet = false;
-
-    // スプレッドシートの走査
-    for (let i = 0; i < jan1Values.length; i++) {
-      const rowNum = i + 2; // 2行目から開始
-      const sJan1 = jan1Values[i];
-      const sJan2 = jan2Values[i] || "";
-
-      // JAN1またはJAN2のいずれかに合致する場合
-      if (sJan1 === fileJan || sJan2 === fileJan) {
-        isJanFoundInSheet = true;
+    <!-- ヘッダー（アニメーションキャラクター内蔵） -->
+    <header class="bg-[#FFCD00] bruna-border-b py-4 px-4 text-center shadow-sm relative overflow-hidden">
+      <div class="max-w-4xl mx-auto flex flex-col items-center relative">
         
-        // すでに該当の画像リンク列にURLが入っているかキャッシュ確認
-        const existingVal = imgValuesCache[imgNumber] ? imgValuesCache[imgNumber][i] : "";
-        
-        if (existingVal === "") {
-          // 【スルー判定】セルが完全に空欄の時だけ、ドライブURLを安全に書き込み
-          const driveViewUrl = "https://drive.google.com/file/d/" + file.getId() + "/view?usp=drivesdk";
-          sheet.getRange(rowNum, targetImgColIdx).setValue(driveViewUrl);
+        <!-- キャラクター歩行エリア -->
+        <div class="flex items-center justify-center h-28 relative w-full max-w-xs md:max-w-md">
           
-          // キャッシュも同時に更新し、同じ実行内での二重処理を防ぎます
-          if (imgValuesCache[imgNumber]) {
-            imgValuesCache[imgNumber][i] = driveViewUrl;
+          <!-- キャラクターコンテナ（マウント1.5秒後から左へ3秒かけてスムーズ移動） -->
+          <div class="absolute cursor-pointer flex flex-col items-center transition-all duration-[3000ms] ease-in-out z-10"
+               :style="{ transform: 'translateX(' + charPositionX + 'px)' }"
+               @click="openAIChat">
+            
+            <!-- ピョコッと浮き出るAI吹き出し案内 -->
+            <transition enter-active-class="transition ease-out duration-300" enter-from-class="opacity-0 scale-75 -translate-y-2" enter-to-class="opacity-100 scale-100 translate-y-0">
+              <div v-if="showAiBubble" class="absolute -top-12 bg-white text-xs font-black px-3 py-1.5 bruna-border rounded-xl bruna-shadow-sm whitespace-nowrap animate-bounce text-[#0051A2]">
+                AI相談はこちら！💡
+              </div>
+            </transition>
+
+            <!-- SVG全身キャラクター（1秒後に体が生えてきます） -->
+            <svg class="w-16 h-16 inline-block" :class="{ 'walking-animation': isWalking }" viewBox="0 0 100 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- 体と足 -->
+              <g id="body-parts" class="character-body" :class="{ 'active': hasBody }">
+                <path d="M35 75L20 100H80L65 75Z" fill="#0051A2" stroke="#3B2216" stroke-width="8" stroke-linejoin="round"/>
+                <path d="M38 100V105C38 107 46 107 46 105V100" stroke="#3B2216" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="#FFFFFF"/>
+                <path d="M54 100V105C54 107 62 107 62 105V100" stroke="#3B2216" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="#FFFFFF"/>
+              </g>
+              <!-- 頭部と耳 -->
+              <g id="head">
+                <path d="M35 15C35 7 43 7 43 15V45H35V15Z" fill="#FFFFFF" stroke="#3B2216" stroke-width="8" stroke-linejoin="round"/>
+                <path d="M57 15C57 7 65 7 65 15V45H57V15Z" fill="#FFFFFF" stroke="#3B2216" stroke-width="8" stroke-linejoin="round"/>
+                <path d="M25 45C25 35 75 35 75 45V75C75 85 25 85 25 75V45Z" fill="#FFFFFF" stroke="#3B2216" stroke-width="8" stroke-linejoin="round"/>
+                <circle cx="42" cy="55" r="4" fill="#3B2216"/>
+                <circle cx="58" cy="55" r="4" fill="#3B2216"/>
+                <path d="M47 64L53 70M53 64L47 70" stroke="#3B2216" stroke-width="5" stroke-linecap="round"/>
+              </g>
+            </svg>
+          </div>
+
+          <!-- メインタイトルロゴ（左側のうさぎスペースを確保して配置崩れを防止） -->
+          <h1 class="text-2xl md:text-3xl font-black tracking-wider flex items-center justify-center gap-2 relative">
+            <div class="w-16 h-16 flex-shrink-0"></div> <!-- うさぎが重なるためのダミースペース -->
+            <span>テイクオンB面</span>
+          </h1>
+          
+        </div>
+
+      </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="flex-grow max-w-4xl w-full mx-auto px-4 py-8">
+      
+      <!-- ローディング表示 -->
+      <div v-if="isLoading" class="text-center py-20">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-[#3B2216] border-t-[#FFCD00] mb-4"></div>
+        <p class="font-bold text-[#3B2216] text-lg">スプレッドシートから最新データをフェッチ中...</p>
+      </div>
+
+      <!-- エラー表示 -->
+      <div v-else-if="error" class="bg-[#E32915] text-white bruna-border rounded-2xl p-6 mb-8 bruna-shadow">
+        <h3 class="font-black text-lg mb-2 flex items-center gap-2">
+          <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+          データの読み込みに失敗しました
+        </h3>
+        <p class="text-sm opacity-95 mb-4">{{ error }}</p>
+        <p class="text-xs opacity-90 mb-4">※GAS統合APIのデプロイURLが正しく設定されているか、またはGoogleスプレッドシートのIDが正しいかご確認ください。</p>
+        <div class="flex gap-2">
+          <button @click="loadProductsFromGas" class="bg-white text-[#E32915] px-4 py-2 rounded-lg font-bold bruna-border bruna-shadow-sm bruna-shadow-active text-sm">
+            もう一度試す
+          </button>
+        </div>
+      </div>
+
+      <!-- 商品リスト -->
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div v-for="(product, index) in products" :key="index" 
+             class="bg-white bruna-border rounded-2xl overflow-hidden bruna-shadow flex flex-col justify-between transition-all duration-200"
+             :class="[getCardBgClass(index), product.stock === 0 ? 'opacity-70' : '']">
+          
+          <!-- 商品画像エリア（スワイプ・ドラッグ切り替え対応） -->
+          <div class="relative bg-white bruna-border-b h-72 flex items-center justify-center overflow-hidden select-none cursor-grab active:cursor-grabbing"
+               @touchstart="onTouchStart($event, product)"
+               @touchend="onTouchEnd($event, product)"
+               @mousedown="onMouseDown($event, product)"
+               @mouseup="onMouseUp($event, product)">
+            
+            <!-- カルーセルメイン画像 -->
+            <img v-if="product.images && product.images.length > 0 && product.images[product.current_image_index]" 
+                 :src="product.images[product.current_image_index]" 
+                 :alt="product.title" 
+                 class="object-contain w-full h-full p-4 transition-all duration-300 pointer-events-none" 
+                 referrerpolicy="no-referrer"
+                 @error="onImageError(product, product.current_image_index)">
+            
+            <!-- 代替のキャラクター風アイコン（画像がない場合） -->
+            <div v-else class="w-full h-full flex items-center justify-center pointer-events-none" :class="getIllustrationBg(index)">
+              <svg class="w-32 h-32 opacity-90" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g v-if="index % 4 === 0">
+                  <path d="M20 50L50 20L80 50V80H20V50Z" fill="#0051A2" stroke="#3B2216" stroke-width="6" stroke-linejoin="round"/>
+                  <rect x="42" y="55" width="16" height="25" fill="#FFCD00" stroke="#3B2216" stroke-width="4"/>
+                  <circle cx="35" cy="42" r="6" fill="#FFCD00" stroke="#3B2216" stroke-width="4"/>
+                </g>
+                <g v-else-if="index % 4 === 1">
+                  <circle cx="50" cy="50" r="14" fill="#FFCD00" stroke="#3B2216" stroke-width="5"/>
+                  <circle cx="50" cy="24" r="12" fill="#FFFFFF" stroke="#3B2216" stroke-width="5"/>
+                  <circle cx="50" cy="76" r="12" fill="#FFFFFF" stroke="#3B2216" stroke-width="5"/>
+                  <circle cx="24" cy="50" r="12" fill="#FFFFFF" stroke="#3B2216" stroke-width="5"/>
+                  <circle cx="76" cy="50" r="12" fill="#FFFFFF" stroke="#3B2216" stroke-width="5"/>
+                </g>
+                <g v-else-if="index % 4 === 2">
+                  <path d="M50 35C40 25 25 30 25 50C25 75 45 85 50 85C55 85 75 75 75 50C75 30 60 25 50 35Z" fill="#E32915" stroke="#3B2216" stroke-width="6" stroke-linejoin="round"/>
+                  <path d="M50 35C50 25 55 20 60 15" stroke="#3B2216" stroke-width="6" stroke-linecap="round"/>
+                  <path d="M48 24C40 24 35 30 35 30" stroke="#008940" stroke-width="5" stroke-linecap="round"/>
+                </g>
+                <g v-else>
+                  <rect x="25" y="30" width="40" height="50" rx="6" fill="#008940" stroke="#3B2216" stroke-width="6"/>
+                  <path d="M65 40C75 40 80 45 80 55C80 65 75 70 65 70" fill="none" stroke="#3B2216" stroke-width="6" stroke-linecap="round"/>
+                  <circle cx="45" cy="55" r="8" fill="#FFCD00" stroke="#3B2216" stroke-width="4"/>
+                </g>
+              </svg>
+            </div>
+
+            <!-- 画像カルーセルインジケーター（左右に半透明で「◀」「▶」の三角マークを配置するのみ） -->
+            <button v-if="product.images && product.images.length > 1" 
+                    @click.stop="prevImage(product)" 
+                    class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/10 hover:bg-black/25 text-white active:scale-95 transition-colors rounded-full w-9 h-9 flex items-center justify-center text-xs font-black pointer-events-auto shadow-sm"
+                    title="前の画像">
+              ◀
+            </button>
+            <button v-if="product.images && product.images.length > 1" 
+                    @click.stop="nextImage(product)" 
+                    class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/10 hover:bg-black/25 text-white active:scale-95 transition-colors rounded-full w-9 h-9 flex items-center justify-center text-xs font-black pointer-events-auto shadow-sm"
+                    title="次の画像">
+              ▶
+            </button>
+            
+            <!-- 価格タグ (税抜売価を表示) -->
+            <div class="absolute top-4 right-4 bg-[#E32915] text-white px-3 py-2 font-black text-lg bruna-border rounded-xl bruna-shadow-sm pointer-events-none">
+              <div class="text-xs opacity-90 text-center font-bold">価格 (税抜)</div>
+              ¥{{ formatPrice(product.price) }}
+            </div>
+
+            <!-- 売り切れバッジ -->
+            <div v-if="product.stock === 0" class="absolute inset-0 bg-black/40 flex items-center justify-center pointer-events-none">
+              <span class="bg-[#E32915] text-white px-6 py-3 font-black text-2xl bruna-border rounded-xl bruna-shadow rotate-[-6deg]">
+                SOLD OUT
+              </span>
+            </div>
+          </div>
+
+          <!-- 商品説明＆コード・在庫状況 -->
+          <div class="p-5 flex-grow flex flex-col justify-between bg-white">
+            <div>
+              <!-- 商品名 -->
+              <h2 class="text-xl font-black tracking-wide leading-snug">{{ product.title }}</h2>
+              
+              <!-- M列：商品概要（改行をそのまま再現する whitespace-pre-wrap） -->
+              <p v-if="product.overview" class="text-sm font-bold text-gray-500 mt-1 mb-4 leading-relaxed whitespace-pre-wrap">
+                {{ product.overview }}
+              </p>
+
+              <!-- 現在庫数とJANコード -->
+              <div class="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-black text-gray-700">
+                <span>
+                  在庫数: <span :class="product.stock <= 5 ? 'text-[#E32915]' : ''">{{ product.stock }}個</span>
+                </span>
+                <span v-if="product.display_jan" class="text-gray-500">
+                  JAN: <span class="text-[#3B2216] font-mono">{{ product.display_jan }}</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- 数量変更エリア -->
+            <div class="flex items-center justify-between border-t-2 border-dashed border-[#3B2216]/30 pt-4">
+              <span class="font-bold text-sm">数量選択</span>
+              <div class="flex items-center gap-3">
+                <!-- マイナスボタン -->
+                <button @click="decrement(index)" :disabled="product.stock === 0" class="w-10 h-10 bg-white bruna-border rounded-lg flex items-center justify-center font-black text-xl bruna-shadow-sm bruna-shadow-active hover:bg-gray-100 transition-colors disabled:opacity-50">
+                  -
+                </button>
+                <span class="w-8 text-center font-black text-xl">{{ getQuantity(index) }}</span>
+                <!-- プラスボタン -->
+                <button @click="increment(index)" :disabled="product.stock === 0 || getQuantity(index) >= product.stock" class="w-10 h-10 bg-[#FFCD00] bruna-border rounded-lg flex items-center justify-center font-black text-xl bruna-shadow-sm bruna-shadow-active hover:bg-[#E2B500] transition-colors disabled:opacity-50">
+                  +
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+
+    <!-- 下部カートバー (税抜合計金額を表示) -->
+    <transition enter-active-class="transition ease-out duration-300" enter-from-class="transform translate-y-full" enter-to-class="transform translate-y-0" leave-active-class="transition ease-in duration-200" leave-from-class="transform translate-y-0" leave-to-class="transform translate-y-full">
+      <div v-if="totalItems > 0" class="fixed bottom-0 left-0 right-0 bg-white bruna-border-t p-4 z-20 shadow-lg">
+        <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div class="text-center sm:text-left">
+            <span class="bg-[#0051A2] text-white px-2 py-1 text-xs font-bold rounded bruna-border bruna-shadow-sm mr-2">
+              仮注文予定
+            </span>
+            <span class="font-black text-lg text-[#3B2216]">{{ totalItems }}点 のアイテム</span>
+            <span class="mx-2 text-gray-300">|</span>
+            <span class="font-black text-xl text-[#E32915]">合計 ¥{{ formatPrice(totalPrice) }} (税抜)</span>
+          </div>
+          
+          <button @click="openOrderModal" class="w-full sm:w-auto bg-[#E32915] text-white px-8 py-3 rounded-xl font-black text-lg bruna-border bruna-shadow bruna-shadow-active hover:bg-[#C51F0D] flex items-center justify-center gap-2 transition-colors">
+            <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+            仮注文手続きに進む
+          </button>
+        </div>
+      </div>
+    </transition>
+
+    <!-- 仮注文内容確認モーダル -->
+    <transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition ease-in duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div v-if="isOrderModalOpen" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 flex items-center justify-center p-4">
+        <div class="bg-white bruna-border rounded-2xl w-full max-w-md p-6 bruna-shadow max-h-[90vh] overflow-y-auto">
+          
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-black text-xl flex items-center gap-2">
+              <i data-lucide="clipboard-check" class="text-[#008940]"></i>
+              仮注文内容の確認
+            </h3>
+            <button @click="isOrderModalOpen = false" class="text-gray-500 hover:text-black">
+              <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+          </div>
+
+          <!-- スーパーデリバリー用仮注文 警告表示 -->
+          <div class="bg-[#FFCD00]/25 bruna-border rounded-xl p-4 mb-4 text-xs font-bold leading-relaxed text-[#3B2216]">
+            ⚠️ <span class="text-[#E32915]">※在庫確認の上、スーパーデリバリーのメッセージより発注書を送信いたします。</span>
+          </div>
+
+          <!-- 注文商品リスト (税抜価格のみで集計) -->
+          <div class="space-y-3 mb-6 bg-[#FAF6EE] p-3 rounded-xl bruna-border">
+            <div v-for="item in cartItems" :key="item.index" class="text-xs font-bold space-y-1 py-1.5 border-b border-dashed border-[#3B2216]/10 last:border-0">
+              <div class="flex justify-between items-center text-sm">
+                <span class="font-black text-[#3B2216]">{{ item.title }}</span>
+                <span class="text-[#E32915]">x{{ item.quantity }}</span>
+              </div>
+              <div class="text-[10px] text-gray-500">
+                JAN: {{ item.display_jan || '-' }}
+              </div>
+              <div class="flex justify-between text-gray-700">
+                <span>単価: ¥{{ formatPrice(item.price) }} (税抜)</span>
+                <span>小計: ¥{{ formatPrice(item.price * item.quantity) }}</span>
+              </div>
+            </div>
+            
+            <div class="border-t-2 border-dashed border-[#3B2216]/20 pt-2 flex justify-between items-center font-black text-base text-[#E32915]">
+              <span>総合計金額 (税抜)</span>
+              <span>¥{{ formatPrice(totalPrice) }}</span>
+            </div>
+          </div>
+
+          <!-- お客様情報入力フォーム -->
+          <div class="space-y-4 mb-6">
+            <div>
+              <label class="block text-xs font-bold mb-1 text-[#3B2216]">お名前（必須）</label>
+              <input type="text" v-model="customerInfo.name" placeholder="山田 太郎" class="w-full px-3 py-2 bruna-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0051A2] font-bold">
+            </div>
+            <div>
+              <label class="block text-xs font-bold mb-1 text-[#3B2216]">ご連絡先（電話 / メール等）（必須）</label>
+              <input type="text" v-model="customerInfo.contact" placeholder="090-0000-0000 / sample@mail.com" class="w-full px-3 py-2 bruna-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0051A2] font-bold">
+            </div>
+            <div>
+              <label class="block text-xs font-bold mb-1 text-[#3B2216]">その他・ご要望・備考（任意）</label>
+              <textarea v-model="customerInfo.memo" placeholder="ご質問や指定事項がございましたらご記入ください" rows="2" class="w-full px-3 py-2 bruna-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0051A2] font-bold"></textarea>
+            </div>
+          </div>
+
+          <!-- 仮注文送信確定ボタン -->
+          <div class="space-y-3 border-t border-[#3B2216]/10 pt-4">
+            <button @click="submitPreOrder" :disabled="isSending" class="w-full bg-[#008940] text-white py-3.5 rounded-xl font-bold text-sm bruna-border bruna-shadow-sm bruna-shadow-active hover:bg-[#007034] flex items-center justify-center gap-2 transition-colors disabled:opacity-50">
+              <i data-lucide="check-circle" class="w-5 h-5"></i>
+              <span>{{ isSending ? '仮注文データを送信中...' : 'この内容で仮注文を確定する' }}</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </transition>
+
+    <!-- AIお悩み相談モーダル（Gemini API連携・税抜価格でガイド） -->
+    <transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition ease-in duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div v-if="isAiChatOpen" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 flex items-center justify-center p-4">
+        <div class="bg-white bruna-border rounded-2xl w-full max-w-md p-6 bruna-shadow max-h-[90vh] overflow-y-auto flex flex-col">
+          
+          <!-- モーダルヘッダー -->
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-black text-xl flex items-center gap-2 text-[#0051A2]">
+              <i data-lucide="sparkles" class="w-6 h-6"></i>
+              テイクオン AIお悩み相談
+            </h3>
+            <button @click="isAiChatOpen = false" class="text-gray-500 hover:text-black">
+              <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+          </div>
+
+          <!-- チャットログ表示エリア -->
+          <div class="flex-grow overflow-y-auto bg-[#FAF6EE] bruna-border rounded-xl p-4 mb-4 min-h-[250px] max-h-[400px] flex flex-col space-y-4">
+            
+            <!-- AIの最初のご挨拶 -->
+            <div class="flex items-start gap-2.5">
+              <div class="w-8 h-8 rounded-full bg-[#FFCD00] flex items-center justify-center bruna-border flex-shrink-0 text-xs">🐰</div>
+              <div class="bg-white bruna-border rounded-2xl px-3 py-2 text-sm font-bold shadow-sm max-w-[80%] whitespace-pre-wrap">
+                こんにちは！テイクオンB面の仮注文コンシェルジュだよ。
+                商品について知りたいことや、今日のおすすめ、予算に合わせた相談など、何でも気軽に聞いてね！
+              </div>
+            </div>
+
+            <!-- チャットのやり取りの履歴 -->
+            <div v-for="(chat, i) in chatHistory" :key="i" class="space-y-4 w-full">
+              <!-- ユーザー発言 -->
+              <div class="flex justify-end w-full">
+                <div class="bg-[#0051A2] text-white bruna-border rounded-2xl px-3 py-2 text-sm font-bold max-w-[80%] whitespace-pre-wrap">
+                  {{ chat.query }}
+                </div>
+              </div>
+              <!-- AI応答 -->
+              <div class="flex items-start gap-2.5 w-full">
+                <div class="w-8 h-8 rounded-full bg-[#FFCD00] flex items-center justify-center bruna-border flex-shrink-0 text-xs">🐰</div>
+                <div class="bg-white bruna-border rounded-2xl px-3 py-2 text-sm font-bold shadow-sm max-w-[80%] whitespace-pre-wrap">
+                  {{ chat.response }}
+                </div>
+              </div>
+            </div>
+
+            <!-- AIローディング表示（ピョコピョコ動く） -->
+            <div v-if="isAiLoading" class="flex items-start gap-2.5">
+              <div class="w-8 h-8 rounded-full bg-[#FFCD00] flex items-center justify-center bruna-border flex-shrink-0 text-xs animate-bounce">🐰</div>
+              <div class="bg-white bruna-border rounded-2xl px-3 py-2 text-sm font-bold shadow-sm flex items-center gap-1">
+                考え中
+                <span class="animate-pulse">.</span>
+                <span class="animate-pulse delay-100">.</span>
+                <span class="animate-pulse delay-200">.</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- クイックお悩み相談質問集 -->
+          <div class="mb-4">
+            <div class="text-xs font-black text-gray-500 mb-1.5">💡 タップしてクイック相談</div>
+            <div class="flex flex-wrap gap-1.5">
+              <button @click="quickAsk('今の一番おすすめの商品は？')" class="bg-white hover:bg-gray-100 text-xs font-bold px-2.5 py-1 rounded-lg bruna-border bruna-shadow-sm bruna-shadow-active">
+                今日のおすすめは？✨
+              </button>
+              <button @click="quickAsk('予算5000円以内でおすすめの商品を教えて')" class="bg-white hover:bg-gray-100 text-xs font-bold px-2.5 py-1 rounded-lg bruna-border bruna-shadow-sm bruna-shadow-active">
+                予算5,000円のお勧めは？💰
+              </button>
+              <button @click="quickAsk('人気商品の特徴を詳しく教えてください')" class="bg-white hover:bg-gray-100 text-xs font-bold px-2.5 py-1 rounded-lg bruna-border bruna-shadow-sm bruna-shadow-active">
+                人気商品の魅力を教えて！🌟
+              </button>
+            </div>
+          </div>
+
+          <!-- 入力送信フォーム -->
+          <div class="flex gap-2">
+            <input type="text" v-model="aiQuery" @keyup.enter="askGeminiAI" placeholder="AIにおすすめを聞いてみる..." class="flex-grow px-3 py-2.5 bruna-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0051A2] font-bold">
+            <button @click="askGeminiAI" :disabled="isAiLoading || !aiQuery.trim()" class="bg-[#0051A2] text-white px-4 py-2.5 rounded-xl font-bold text-sm bruna-border bruna-shadow-sm bruna-shadow-active hover:bg-[#003D7A] transition-colors disabled:opacity-50 flex items-center justify-center">
+              <i data-lucide="send" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </transition>
+
+    <!-- フッター -->
+    <footer class="bg-[#5D3725] text-white bruna-border-t py-6 px-4 text-center mt-auto">
+      <div class="max-w-4xl mx-auto text-sm font-bold opacity-90">
+        <p>© テイクオン. All rights reserved.</p>
+      </div>
+    </footer>
+
+  </div>
+
+  <script>
+    const { createApp, ref, computed, onMounted, nextTick } = Vue;
+
+    createApp({
+      setup() {
+        // ================================================================
+        // 🔒 セキュリティ対策済みの通信URL設定
+        // ================================================================
+        // GitHubに絶対露出させたくないGAS統合WebアプリのURLです。
+        // Cloudflare Pagesのビルド設定(環境変数置換など)で書き換えるプレースホルダーになっています。
+        // (環境変数を使用しない場合は、以下の %%GAS_API_URL%% の部分にご提示のデプロイURLをそのまま上書きしてください)
+        const gasApiUrl = "%%GAS_API_URL%%"; 
+
+        // --- 状態管理 ---
+        const isOrderModalOpen = ref(false);
+        const isLoading = ref(false);
+        const isSending = ref(false);
+        const error = ref(null);
+        
+        const products = ref([]);
+        const cart = ref({}); // { index: quantity }
+        
+        const customerInfo = ref({
+          name: '',
+          contact: '',
+          memo: ''
+        });
+
+        // キャラクターアニメーション用のリアクティブ状態
+        const hasBody = ref(false);
+        const isWalking = ref(false);
+        const charPositionX = ref(120); // 初期右ポジション
+        const showAiBubble = ref(false);
+
+        // AIチャット用状態
+        const isAiChatOpen = ref(false);
+        const aiQuery = ref('');
+        const chatHistory = ref([]);
+        const isAiLoading = ref(false);
+
+        // スワイプおよびドラッグ操作による画像切り替え追跡変数
+        const dragStartX = ref(0);
+
+        // デモ商品データ (通信エラー時などの安全なフォールバック用)
+        const demoProducts = [
+          {
+            title: "デモ商品A: テイクオン・おうちのクッション",
+            price: 3200,
+            stock: 10,
+            display_jan: "4901234567890",
+            images: [],
+            current_image_index: 0,
+            overview: "テイクオンおなじみの丸ゴシック調で構成された可愛いクッションです。"
+          },
+          {
+            title: "デモ商品B: 飾れるフラワーマグカップ",
+            price: 1800,
+            stock: 0,
+            display_jan: "4901234567892",
+            images: [],
+            current_image_index: 0,
+            overview: "JAN1が空欄のため、JAN2のデータが自動フォールバック表示されています。"
+          }
+        ];
+
+        // --- 算出プロパティ ---
+        const totalItems = computed(() => {
+          return Object.values(cart.value).reduce((sum, qty) => sum + qty, 0);
+        });
+
+        const totalPrice = computed(() => {
+          return Object.entries(cart.value).reduce((sum, [index, qty]) => {
+            const product = products.value[index];
+            return sum + (product ? product.price * qty : 0);
+          }, 0);
+        });
+
+        const cartItems = computed(() => {
+          return Object.entries(cart.value)
+            .filter(([_, qty]) => qty > 0)
+            .map(([index, qty]) => ({
+              index: parseInt(index),
+              quantity: qty,
+              ...products.value[index]
+            }));
+        });
+
+        // --- ライフサイクル ---
+        onMounted(() => {
+          loadProductsFromGas();
+          nextTick(() => {
+            if (typeof lucide !== 'undefined') {
+              lucide.createIcons();
+            }
+          });
+
+          // キャラクターアニメーションの起動フロー
+          setTimeout(() => {
+            hasBody.value = true;
+            setTimeout(() => {
+              isWalking.value = true;
+              charPositionX.value = -90; // タイトルの左側の定位置へ
+              
+              setTimeout(() => {
+                isWalking.value = false;
+                showAiBubble.value = true;
+              }, 3000);
+            }, 500);
+          }, 1000);
+        });
+
+        // --- メソッド ---
+
+        /**
+         * セキュアなデータ取得
+         * スプレッドシートIDや共有URLを一切露出させず、GASの統合APIから商品データをJSONで安全に取得します。
+         */
+        const loadProductsFromGas = async () => {
+          if (!gasApiUrl || gasApiUrl.startsWith("%%")) {
+            console.warn("GAS_API_URLが設定されていません。デモデータで起動します。");
+            products.value = [...demoProducts];
+            resetCart();
+            return;
+          }
+
+          isLoading.value = true;
+          error.value = null;
+
+          try {
+            // CORSプリフライトを完全に回避する安全なPOST型text/plain送信
+            const response = await fetch(gasApiUrl, {
+              method: "POST",
+              headers: { "Content-Type": "text/plain" },
+              body: JSON.stringify({ action: "get_products" })
+            });
+
+            if (!response.ok) {
+              throw new Error("HTTP error! status: " + response.status);
+            }
+
+            const data = await response.json();
+
+            if (data.status === "success" && data.products) {
+              products.value = data.products;
+              resetCart();
+            } else {
+              throw new Error(data.message || "スプレッドシートの商品データの展開に失敗しました。");
+            }
+
+          } catch (err) {
+            console.error("データ同期エラー:", err);
+            error.value = err.message || "GAS統合APIとの通信に失敗しました。";
+            // エラー時はデモデータを展開
+            products.value = [...demoProducts];
+            resetCart();
+          } finally {
+            isLoading.value = false;
+            nextTick(() => {
+              if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+              }
+            });
+          }
+        };
+
+        const nextImage = (product) => {
+          if (product.images.length > 1) {
+            product.current_image_index = (product.current_image_index + 1) % product.images.length;
+          }
+        };
+
+        const prevImage = (product) => {
+          if (product.images.length > 1) {
+            product.current_image_index = (product.current_image_index - 1 + product.images.length) % product.images.length;
+          }
+        };
+
+        const onTouchStart = (e, product) => {
+          dragStartX.value = e.touches[0].clientX;
+        };
+
+        const onTouchEnd = (e, product) => {
+          const touchEndX = e.changedTouches[0].clientX;
+          handleSwipe(dragStartX.value, touchEndX, product);
+        };
+
+        const onMouseDown = (e, product) => {
+          dragStartX.value = e.clientX;
+        };
+
+        const onMouseUp = (e, product) => {
+          const dragEndX = e.clientX;
+          handleSwipe(dragStartX.value, dragEndX, product);
+        };
+
+        const handleSwipe = (start, end, product) => {
+          const swipeThreshold = 55;
+          const diff = start - end;
+          if (Math.abs(diff) > swipeThreshold) {
+            if (diff > 0) {
+              nextImage(product);
+            } else {
+              prevImage(product);
+            }
+          }
+        };
+
+        const resetCart = () => {
+          cart.value = {};
+          products.value.forEach((_, index) => {
+            cart.value[index] = 0;
+          });
+        };
+
+        const getQuantity = (index) => {
+          return cart.value[index] || 0;
+        };
+
+        const increment = (index) => {
+          const product = products.value[index];
+          if (cart.value[index] === undefined) {
+            cart.value[index] = 0;
           }
           
-          Logger.log("🟢 転記成功!: 「" + fullName + "」をスプシ " + rowNum + "行目の「画像リンク" + imgNumber + "」に書き込みました。");
-          processedCount++;
-        } else {
-          // 【スルー判定】すでに値が入力されている箇所は、完全にスルー（上書きをしない）
-          Logger.log("ℹ️ スルー（転記済み）: " + rowNum + "行目の「画像リンク" + imgNumber + "」はすでに入力済みのため何もしません。");
-        }
+          if (cart.value[index] < product.stock) {
+            cart.value[index]++;
+          } else {
+            alert(`申し訳ありません。この商品の現在庫は最大 ${product.stock} 個です。`);
+          }
+        };
+
+        const decrement = (index) => {
+          if (cart.value[index] > 0) {
+            cart.value[index]--;
+          }
+        };
+
+        const onImageError = (product, imgIndex) => {
+          product.images.splice(imgIndex, 1);
+          if (product.current_image_index >= product.images.length) {
+            product.current_image_index = 0;
+          }
+        };
+
+        const getCardBgClass = (index) => {
+          const mod = index % 4;
+          if (mod === 0) return 'hover:border-[#0051A2]';
+          if (mod === 1) return 'hover:border-[#FFCD00]';
+          if (mod === 2) return 'hover:border-[#E32915]';
+          return 'hover:border-[#008940]';
+        };
+
+        const getIllustrationBg = (index) => {
+          return 'bg-[#FAF6EE]';
+        };
+
+        const formatPrice = (val) => {
+          return Number(val).toLocaleString();
+        };
+
+        const openOrderModal = () => {
+          isOrderModalOpen.value = true;
+          nextTick(() => {
+            if (typeof lucide !== 'undefined') {
+              lucide.createIcons();
+            }
+          });
+        };
+
+        const validateForm = () => {
+          if (!customerInfo.value.name.trim() || !customerInfo.value.contact.trim()) {
+            alert('お名前とご連絡先は、仮注文手続きのためにご入力が必要です。');
+            return false;
+          }
+          return true;
+        };
+
+        const generateOrderId = () => {
+          const now = new Date();
+          const jstOffset = 9 * 60 * 60 * 1000;
+          const jstDate = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + jstOffset);
+
+          const yy = String(jstDate.getFullYear()).slice(-2);
+          const mm = String(jstDate.getMonth() + 1).padStart(2, '0');
+          const dd = String(jstDate.getDate()).padStart(2, '0');
+          const hh = String(jstDate.getHours()).padStart(2, '0');
+          const min = String(jstDate.getMinutes()).padStart(2, '0');
+          const ss = String(jstDate.getSeconds()).padStart(2, '0');
+
+          return `${yy}${mm}${dd}${hh}${min}${ss}`;
+        };
+
+        /**
+         * 在庫自動減算・仮注文シート記録・自動管理者メール配信の統合トリガー
+         */
+        const submitPreOrder = async () => {
+          if (!validateForm()) return;
+
+          if (!gasApiUrl || gasApiUrl.startsWith("%%")) {
+            alert('API連携エラー: システム接続用のGAS API URLが設定されていません。');
+            return;
+          }
+
+          isSending.value = true;
+          try {
+            const orderId = generateOrderId();
+
+            const orderPayload = {
+              action: "submit_order",
+              orderId: orderId,
+              customer: {
+                name: customerInfo.value.name.trim(),
+                contact: customerInfo.value.contact.trim(),
+                memo: customerInfo.value.memo.trim()
+              },
+              items: cartItems.value.map(item => ({
+                rowIndex: item.rowIndex,
+                cord_ne: item.cord_ne || '',
+                cord_al: item.cord_al || '',
+                jan1: item.jan1 || '',
+                jan2: item.jan2 || '',
+                title: item.title,
+                quantity: item.quantity,
+                price: item.price
+              }))
+            };
+
+            await fetch(gasApiUrl, {
+              method: 'POST',
+              headers: { "Content-Type": "text/plain" },
+              body: JSON.stringify(orderPayload)
+            });
+
+            alert('仮注文の送信が完了いたしました！\n\n在庫状況を確認の上、スーパーデリバリーのメッセージより発注書を送信いたします。今しばらくお待ちください。');
+
+            customerInfo.value.name = '';
+            customerInfo.value.contact = '';
+            customerInfo.value.memo = '';
+            isOrderModalOpen.value = false;
+            resetCart();
+
+            // スプシ側から在庫の最新状態を引き抜いて同期リロード
+            setTimeout(() => {
+              loadProductsFromGas();
+            }, 1200);
+
+          } catch (apiError) {
+            console.error("仮注文処理中にエラーが発生しました:", apiError);
+            alert('仮注文の処理中に一時的なネットワークエラーが発生しました。もう一度お試しください。');
+          } finally {
+            isSending.value = false;
+          }
+        };
+
+        // --- AI相談窓口（Geminiコール）機能関連 ---
+        const openAIChat = () => {
+          isAiChatOpen.value = true;
+          nextTick(() => {
+            if (typeof lucide !== 'undefined') {
+              lucide.createIcons();
+            }
+          });
+        };
+
+        const quickAsk = (question) => {
+          aiQuery.value = question;
+          askGeminiAI();
+        };
+
+        /**
+         * HTML側からAPIキーを完全に秘匿した安全なGemini AI呼び出し
+         * 質問テキストだけをGASに送り、GASがサーバー側で安全にGeminiと通信します。
+         */
+        const askGeminiAI = async () => {
+          if (isAiLoading.value || !aiQuery.value.trim()) return;
+
+          const query = aiQuery.value.trim();
+          aiQuery.value = '';
+          isAiLoading.value = true;
+
+          try {
+            if (!gasApiUrl || gasApiUrl.startsWith("%%")) {
+              throw new Error("GAS APIのデプロイURLが未セットのため、AI相談窓口に繋げられません。");
+            }
+
+            const response = await fetch(gasApiUrl, {
+              method: "POST",
+              headers: { "Content-Type": "text/plain" },
+              body: JSON.stringify({
+                action: "ask_gemini",
+                query: query
+              })
+            });
+
+            if (!response.ok) {
+              throw new Error("AIサーバーからの応答エラー (HTTP " + response.status + ")");
+            }
+
+            const data = await response.json();
+
+            if (data.status === "success") {
+              chatHistory.value.push({ query, response: data.response });
+            } else {
+              throw new Error(data.message || "AIが一時的にお返事できない状態です。");
+            }
+
+          } catch (err) {
+            console.error("AI相談エラー:", err);
+            chatHistory.value.push({ 
+              query, 
+              response: err.message || "お返事の受信中にエラーが発生しました。少しお時間をおいてもう一度聞いてみてね。" 
+            });
+          } finally {
+            isAiLoading.value = false;
+          }
+        };
+
+        return {
+          isOrderModalOpen,
+          isLoading,
+          isSending,
+          error,
+          products,
+          customerInfo,
+          totalItems,
+          totalPrice,
+          cartItems,
+          loadProductsFromGas,
+          getQuantity,
+          increment,
+          decrement,
+          nextImage,
+          prevImage,
+          getCardBgClass,
+          getIllustrationBg,
+          formatPrice,
+          onImageError,
+          openOrderModal,
+          onTouchStart,
+          onTouchEnd,
+          onMouseDown,
+          onMouseUp,
+          submitPreOrder,
+          
+          // キャラクターアニメーションステート
+          hasBody,
+          isWalking,
+          charPositionX,
+          showAiBubble,
+
+          // AIチャットステート・メソッド
+          isAiChatOpen,
+          aiQuery,
+          chatHistory,
+          isAiLoading,
+          openAIChat,
+          quickAsk,
+          askGeminiAI
+        };
       }
-    }
-
-    if (!isJanFoundInSheet) {
-      Logger.log("⚠️ スルー（JAN未登録）: 画像ファイル「" + fullName + "」のJAN [" + fileJan + "] はスプシ（JAN1/JAN2列）に存在しません。");
-    }
-  }
-
-  Logger.log("=========================================");
-  if (processedCount > 0) {
-    SpreadsheetApp.flush();
-    Logger.log("🎉 同期完了: 今回新しく " + processedCount + " 件の画像をスプレッドシートに反映しました！");
-  } else {
-    Logger.log("ℹ️ 同期完了: 新たに転記が必要な画像はありませんでした。");
-  }
-  Logger.log("=========================================");
-}
+    }).mount('#app');
+  </script>
+</body>
+</html>
