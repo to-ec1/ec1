@@ -74,7 +74,7 @@
 
   <div id="app" class="min-h-screen flex flex-col pb-24">
     
-    <!-- ヘッダー（アニメーションキャラクター内蔵 & 歯車設定削除済み） -->
+    <!-- ヘッダー（アニメーションキャラクター内蔵） -->
     <header class="bg-[#FFCD00] bruna-border-b py-4 px-4 text-center shadow-sm relative overflow-hidden">
       <div class="max-w-4xl mx-auto flex flex-col items-center relative">
         
@@ -211,10 +211,10 @@
               ▶
             </button>
             
-            <!-- 価格タグ -->
+            <!-- 価格タグ (税抜売価を表示) -->
             <div class="absolute top-4 right-4 bg-[#E32915] text-white px-3 py-2 font-black text-lg bruna-border rounded-xl bruna-shadow-sm pointer-events-none">
-              <div class="text-xs opacity-90 text-center font-bold">税込価格({{ product.tax_percent }}%)</div>
-              ¥{{ formatPrice(product.price_with_tax) }}
+              <div class="text-xs opacity-90 text-center font-bold">価格 (税抜)</div>
+              ¥{{ formatPrice(product.price) }}
             </div>
 
             <!-- 売り切れバッジ -->
@@ -269,7 +269,7 @@
 
     </main>
 
-    <!-- 下部カートバー -->
+    <!-- 下部カートバー (税抜合計金額を表示) -->
     <transition enter-active-class="transition ease-out duration-300" enter-from-class="transform translate-y-full" enter-to-class="transform translate-y-0" leave-active-class="transition ease-in duration-200" leave-from-class="transform translate-y-0" leave-to-class="transform translate-y-full">
       <div v-if="totalItems > 0" class="fixed bottom-0 left-0 right-0 bg-white bruna-border-t p-4 z-20 shadow-lg">
         <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -279,7 +279,7 @@
             </span>
             <span class="font-black text-lg text-[#3B2216]">{{ totalItems }}点 のアイテム</span>
             <span class="mx-2 text-gray-300">|</span>
-            <span class="font-black text-xl text-[#E32915]">合計 ¥{{ formatPrice(totalPrice) }} (税込)</span>
+            <span class="font-black text-xl text-[#E32915]">合計 ¥{{ formatPrice(totalPrice) }} (税抜)</span>
           </div>
           
           <button @click="openOrderModal" class="w-full sm:w-auto bg-[#E32915] text-white px-8 py-3 rounded-xl font-black text-lg bruna-border bruna-shadow bruna-shadow-active hover:bg-[#C51F0D] flex items-center justify-center gap-2 transition-colors">
@@ -290,7 +290,7 @@
       </div>
     </transition>
 
-    <!-- 仮注文内容確認モーダル -->
+    <!-- 仮注文内容確認モーダル (税抜計算に完全統一) -->
     <transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition ease-in duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
       <div v-if="isOrderModalOpen" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 flex items-center justify-center p-4">
         <div class="bg-white bruna-border rounded-2xl w-full max-w-md p-6 bruna-shadow max-h-[90vh] overflow-y-auto">
@@ -310,7 +310,7 @@
             ⚠️ <span class="text-[#E32915]">※在庫確認の上、スーパーデリバリーのメッセージより発注書を送信いたします。</span>
           </div>
 
-          <!-- 注文商品リスト -->
+          <!-- 注文商品リスト (税抜価格のみで集計) -->
           <div class="space-y-3 mb-6 bg-[#FAF6EE] p-3 rounded-xl bruna-border">
             <div v-for="item in cartItems" :key="item.index" class="text-xs font-bold space-y-1 py-1.5 border-b border-dashed border-[#3B2216]/10 last:border-0">
               <div class="flex justify-between items-center text-sm">
@@ -321,13 +321,13 @@
                 JAN: {{ item.display_jan || '-' }}
               </div>
               <div class="flex justify-between text-gray-700">
-                <span>単価: ¥{{ formatPrice(item.price_with_tax) }} (税込{{ item.tax_percent }}%)</span>
-                <span>小計: ¥{{ formatPrice(item.price_with_tax * item.quantity) }}</span>
+                <span>単価: ¥{{ formatPrice(item.price) }} (税抜)</span>
+                <span>小計: ¥{{ formatPrice(item.price * item.quantity) }}</span>
               </div>
             </div>
             
             <div class="border-t-2 border-dashed border-[#3B2216]/20 pt-2 flex justify-between items-center font-black text-base text-[#E32915]">
-              <span>総合計金額 (税込)</span>
+              <span>総合計金額 (税抜)</span>
               <span>¥{{ formatPrice(totalPrice) }}</span>
             </div>
           </div>
@@ -360,7 +360,7 @@
       </div>
     </transition>
 
-    <!-- AIお悩み相談モーダル（Gemini API連携） -->
+    <!-- AIお悩み相談モーダル（Gemini API連携・税抜価格でガイド） -->
     <transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition ease-in duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
       <div v-if="isAiChatOpen" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 flex items-center justify-center p-4">
         <div class="bg-white bruna-border rounded-2xl w-full max-w-md p-6 bruna-shadow max-h-[90vh] overflow-y-auto flex flex-col">
@@ -505,8 +505,6 @@
           {
             title: "デモ商品A: テイクオン・おうちのクッション",
             price: 3200,
-            price_with_tax: 3520,
-            tax_percent: 10,
             stock: 10,
             display_jan: "4901234567890",
             images: [],
@@ -516,8 +514,6 @@
           {
             title: "デモ商品B: 飾れるフラワーマグカップ",
             price: 1800,
-            price_with_tax: 1980,
-            tax_percent: 10,
             stock: 0,
             display_jan: "4901234567892",
             images: [],
@@ -531,10 +527,11 @@
           return Object.values(cart.value).reduce((sum, qty) => sum + qty, 0);
         });
 
+        // 完全に税抜価格の合計を算出するように修正
         const totalPrice = computed(() => {
           return Object.entries(cart.value).reduce((sum, [index, qty]) => {
             const product = products.value[index];
-            return sum + (product ? product.price_with_tax * qty : 0);
+            return sum + (product ? product.price * qty : 0);
           }, 0);
         });
 
@@ -792,21 +789,6 @@
             const jan2 = String(getValueByKeys(['jan2', 'JAN2', 'janコード2'])).trim();
             const displayJan = jan1 !== '' ? jan1 : jan2;
 
-            const taxRateRaw = String(getValueByKeys(['税率', '消費税率', 'tax_rate', 'tax'])).trim();
-            let taxPercent = 10;
-            if (taxRateRaw !== '') {
-              const num = parseFloat(taxRateRaw.replace(/%/g, ''));
-              if (!isNaN(num)) {
-                if (num > 0 && num < 1 && !taxRateRaw.includes('%')) {
-                  taxPercent = Math.round(num * 100);
-                } else {
-                  taxPercent = Math.round(num);
-                }
-              }
-            }
-
-            const priceWithTax = Math.floor(priceExTax * (1 + taxPercent / 100));
-
             const img1 = String(getValueByKeys(['画像リンク1', '画像1', 'image1', 'image_url1']));
             const img2 = String(getValueByKeys(['画像リンク2', '画像2', 'image2', 'image_url2']));
             const img3 = String(getValueByKeys(['画像リンク3', '画像3', 'image3', 'image_url3']));
@@ -823,9 +805,7 @@
 
             result.push({
               title,
-              price: priceExTax,
-              price_with_tax: priceWithTax,
-              tax_percent: taxPercent,
+              price: priceExTax, // 税抜売価をメイン価格として保持
               stock,
               cord_ne: String(getValueByKeys(['cord_ne', 'ne', 'NEコード'])),
               cord_al: String(getValueByKeys(['cord_al', 'al', 'ALコード'])),
@@ -1002,7 +982,7 @@
           return `${yy}${mm}${dd}${hh}${min}${ss}`;
         };
 
-        // スプシへの仮注文書き込みと在庫自動更新のトリガー
+        // スプシへの仮注文書き込みと在庫自動更新のトリガー (税抜売価ベースでデータを構築)
         const submitPreOrder = async () => {
           if (!validateForm()) return;
 
@@ -1032,7 +1012,7 @@
                 jan2: item.jan2 || '',
                 title: item.title,
                 quantity: item.quantity,
-                price: item.price
+                price: item.price // 税抜売価を送信
               }))
             };
 
@@ -1069,7 +1049,7 @@
           }
         };
 
-        // --- 【新規】AI相談窓口（Geminiコール）機能関連 ---
+        // --- AI相談窓口（Geminiコール）機能関連 ---
         const openAIChat = () => {
           isAiChatOpen.value = true;
           nextTick(() => {
@@ -1102,14 +1082,14 @@
           }
         };
 
-        // Gemini 2.5 Flash への非ストリーミングアクセス (指数バックオフ搭載)
+        // Gemini 2.5 Flash へのアクセス (システムプロンプトの税表示やコンテキストを完全に税抜基準へ統一)
         const callGeminiAPI = async (userQuery) => {
           const apiKey = ""; // ランタイム環境が自動付与
           const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
           // 動的なお取り扱い商品コンテキスト情報の作成
           const productContext = products.value.map(p => {
-            return `- 商品名: ${p.title}\n  商品概要: ${p.overview || 'なし'}\n  税込価格: ¥${p.price_with_tax.toLocaleString()}円\n  在庫状況: ${p.stock > 0 ? p.stock + '個の在庫あり' : 'SOLD OUT (只今品切れ中)'}`;
+            return `- 商品名: ${p.title}\n  商品概要: ${p.overview || 'なし'}\n  売価(税抜): ¥${p.price.toLocaleString()}円\n  在庫状況: ${p.stock > 0 ? p.stock + '個の在庫あり' : 'SOLD OUT (只今品切れ中)'}`;
           }).join("\n");
 
           const systemPrompt = `あなたは親しみやすく温かい「テイクオンB面」のAIキャラクターアシスタントです。
@@ -1120,6 +1100,12 @@ ${productContext}
 ---
 お客様からお勧め商品や、使い方、予算内の選び方などについて質問されたら、上記のリストを基に丁寧に答えてください。
 話し方は、テイクオンの丸みのある優しい雰囲気に合わせ、温かい絵本風の口調（「〜だよ」「〜ね」「〜かな？」など、少し愛らしいテイスト）に統一してください。
+
+【重要な価格ルール】
+- 当店で取り扱う価格表示・計算・案内は、すべて「税抜価格」を基準にしています。
+- お客様への回答には必ず「税抜価格」のみを使用し、税込価格や消費税、税率についての言及や表示は一切行わないでください。
+- 予算（例: 5,000円以内）について質問された場合も、すべて税抜売価の合計ベースで計算して推薦してください。
+
 取り扱い商品リストにない商品については、現在取り扱っていないと答えてね。
 在庫数が0個のSOLD OUT品については、品切れ中であることを正しく教えてあげてください。
 回答は親しみやすく、最大200文字程度で簡潔に分かりやすくお返事してね。`;
