@@ -159,19 +159,23 @@
              class="bg-white bruna-border rounded-2xl overflow-hidden bruna-shadow flex flex-col justify-between transition-all duration-200"
              :class="[getCardBgClass(index), product.stock === 0 ? 'opacity-70' : '']">
           
-          <!-- 商品画像エリア -->
-          <div class="relative bg-white bruna-border-b h-72 flex items-center justify-center overflow-hidden">
+          <!-- 商品画像エリア（スワイプ切り替え対応） -->
+          <div class="relative bg-white bruna-border-b h-72 flex items-center justify-center overflow-hidden select-none cursor-grab active:cursor-grabbing"
+               @touchstart="onTouchStart($event, product)"
+               @touchend="onTouchEnd($event, product)"
+               @mousedown="onMouseDown($event, product)"
+               @mouseup="onMouseUp($event, product)">
             
             <!-- カルーセルメイン画像（スマートフォン対応属性を維持） -->
             <img v-if="product.images && product.images.length > 0 && product.images[product.current_image_index]" 
                  :src="product.images[product.current_image_index]" 
                  :alt="product.title" 
-                 class="object-contain w-full h-full p-4 transition-all duration-300" 
+                 class="object-contain w-full h-full p-4 transition-all duration-300 pointer-events-none" 
                  referrerpolicy="no-referrer"
                  @error="onImageError(product, product.current_image_index)">
             
             <!-- 代替のキャラクター風アイコン（画像がない場合） -->
-            <div v-else class="w-full h-full flex items-center justify-center" :class="getIllustrationBg(index)">
+            <div v-else class="w-full h-full flex items-center justify-center pointer-events-none" :class="getIllustrationBg(index)">
               <svg class="w-32 h-32 opacity-90" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <g v-if="index % 4 === 0">
                   <path d="M20 50L50 20L80 50V80H20V50Z" fill="#0051A2" stroke="#3B2216" stroke-width="6" stroke-linejoin="round"/>
@@ -198,21 +202,21 @@
               </svg>
             </div>
 
-            <!-- 画像カルーセルインジケーター -->
-            <div v-if="product.images && product.images.length > 1" class="absolute inset-x-4 bottom-3 flex justify-between items-center bg-[#FAF6EE] bruna-border px-3 py-1 rounded-xl bruna-shadow-sm text-xs font-bold">
+            <!-- 画像カルーセルインジケーター（複数画像がある場合のみ表示、PC用のナビも維持） -->
+            <div v-if="product.images && product.images.length > 1" class="absolute inset-x-4 bottom-3 flex justify-between items-center bg-[#FAF6EE] bruna-border px-3 py-1 rounded-xl bruna-shadow-sm text-xs font-bold pointer-events-auto">
               <button @click.stop="prevImage(product)" class="px-2 py-0.5 hover:bg-gray-200 rounded text-base active:scale-95 transition-transform" title="前の画像">◀</button>
-              <span>{{ product.current_image_index + 1 }} / {{ product.images.length }}</span>
+              <span class="select-none">スワイプで変更 {{ product.current_image_index + 1 }} / {{ product.images.length }}</span>
               <button @click.stop="nextImage(product)" class="px-2 py-0.5 hover:bg-gray-200 rounded text-base active:scale-95 transition-transform" title="次の画像">▶</button>
             </div>
             
             <!-- 価格タグ -->
-            <div class="absolute top-4 right-4 bg-[#E32915] text-white px-3 py-2 font-black text-lg bruna-border rounded-xl bruna-shadow-sm">
+            <div class="absolute top-4 right-4 bg-[#E32915] text-white px-3 py-2 font-black text-lg bruna-border rounded-xl bruna-shadow-sm pointer-events-none">
               <div class="text-xs opacity-90 text-center font-bold">税込価格({{ product.tax_percent }}%)</div>
               ¥{{ formatPrice(product.price_with_tax) }}
             </div>
 
             <!-- 売り切れバッジ -->
-            <div v-if="product.stock === 0" class="absolute inset-0 bg-black/40 flex items-center justify-center">
+            <div v-if="product.stock === 0" class="absolute inset-0 bg-black/40 flex items-center justify-center pointer-events-none">
               <span class="bg-[#E32915] text-white px-6 py-3 font-black text-2xl bruna-border rounded-xl bruna-shadow rotate-[-6deg]">
                 SOLD OUT
               </span>
@@ -301,7 +305,7 @@
 
           <!-- スーパーデリバリー用仮注文 警告表示 -->
           <div class="bg-[#FFCD00]/25 bruna-border rounded-xl p-4 mb-4 text-xs font-bold leading-relaxed text-[#3B2216]">
-            ⚠️ <span class="text-[#E32915]">※在庫確認の上、スーパーデリバリー of メッセージより発注書を送信いたします。</span>
+            ⚠️ <span class="text-[#E32915]">※在庫確認の上、スーパーデリバリーのメッセージより発注書を送信いたします。</span>
           </div>
 
           <!-- 注文商品リスト -->
@@ -326,7 +330,7 @@
             </div>
           </div>
 
-          <!-- お客様情報入力フォーム（住所は不要のため削除、仮注文に最適化） -->
+          <!-- お客様情報入力フォーム（住所は完全に非表示に修正） -->
           <div class="space-y-4 mb-6">
             <div>
               <label class="block text-xs font-bold mb-1 text-[#3B2216]">お名前（必須）</label>
@@ -342,7 +346,7 @@
             </div>
           </div>
 
-          <!-- 仮注文送信確定ボタン (1クリックで自動的にスプシへの書き込みと引き算が連動) -->
+          <!-- 仮注文送信確定ボタン (1タップでスプシ更新＋在庫減算＋裏で自動管理用メール送信) -->
           <div class="space-y-3 border-t border-[#3B2216]/10 pt-4">
             <button @click="submitPreOrder" :disabled="isSending" class="w-full bg-[#008940] text-white py-3.5 rounded-xl font-bold text-sm bruna-border bruna-shadow-sm bruna-shadow-active hover:bg-[#007034] flex items-center justify-center gap-2 transition-colors disabled:opacity-50">
               <i data-lucide="check-circle" class="w-5 h-5"></i>
@@ -371,7 +375,7 @@
         // --- デフォルトスプレッドシート共有URL (ご提示のスプシID) ---
         const defaultSpreadsheetUrl = 'https://docs.google.com/spreadsheets/d/1xXFBM8tuBfxLDgDDD9pAmlG9-Uq63aLM-qTci_Gagi4/edit?usp=sharing&sheet=%E5%95%86%E5%93%81';
         const defaultEmail = 'takeonec1@gmail.com';
-        // 【修正】ご提示いただいたGASのデプロイURLを初期値として直接登録
+        // ご提示いただいたGASのデプロイURLを初期値として直接登録
         const defaultGasUrl = 'https://script.google.com/macros/s/AKfycbymBVVweV3-Peox6wVPLvyEq8bNGkh2i1Obwmgg4K5e8SsVKhcy9lxHoC8ttHMODh8k/exec';
 
         // --- 状態管理 ---
@@ -397,6 +401,9 @@
           contact: '',
           memo: ''
         });
+
+        // スワイプおよびドラッグ操作による画像切り替え追跡変数
+        const dragStartX = ref(0);
 
         // デモデータ
         const demoProducts = [
@@ -755,6 +762,38 @@
           }
         };
 
+        // --- スマートフォンでのスワイプ切り替えロジックの追加 ---
+        const onTouchStart = (e, product) => {
+          dragStartX.value = e.touches[0].clientX;
+        };
+
+        const onTouchEnd = (e, product) => {
+          const touchEndX = e.changedTouches[0].clientX;
+          handleSwipe(dragStartX.value, touchEndX, product);
+        };
+
+        // --- PC環境でのドラッグ切り替えロジック ---
+        const onMouseDown = (e, product) => {
+          dragStartX.value = e.clientX;
+        };
+
+        const onMouseUp = (e, product) => {
+          const dragEndX = e.clientX;
+          handleSwipe(dragStartX.value, dragEndX, product);
+        };
+
+        const handleSwipe = (start, end, product) => {
+          const swipeThreshold = 55; // 切り替え判定の最小ピクセル数
+          const diff = start - end;
+          if (Math.abs(diff) > swipeThreshold) {
+            if (diff > 0) {
+              nextImage(product); // 左にスワイプ -> 次の画像へ
+            } else {
+              prevImage(product); // 右にスワイプ -> 前の画像へ
+            }
+          }
+        };
+
         const saveSettings = () => {
           spreadsheetUrl.value = tempSpreadsheetUrl.value.trim();
           emailDestination.value = tempEmailDestination.value.trim();
@@ -883,7 +922,7 @@
           return `${yy}${mm}${dd}${hh}${min}${ss}`;
         };
 
-        // メール起動を廃止し、GASへ注文データと在庫減算データを一度にPOST送信してスプシ上で完結させる
+        // スプシへの仮注文書き込みと在庫自動更新のトリガー
         const submitPreOrder = async () => {
           if (!validateForm()) return;
 
@@ -899,6 +938,7 @@
             // 送信する注文内容と在庫更新用データをパッケージ化
             const orderPayload = {
               orderId: orderId,
+              adminEmail: emailDestination.value, // 管理用控えの送信先をペイロードに追加
               customer: {
                 name: customerInfo.value.name.trim(),
                 contact: customerInfo.value.contact.trim(),
@@ -912,14 +952,14 @@
                 jan2: item.jan2 || '',
                 title: item.title,
                 quantity: item.quantity,
-                price: item.price // 税抜売価をそのまま送信
+                price: item.price
               }))
             };
 
             // GAS APIにリクエストを送信
             await fetch(gasUrl.value, {
               method: 'POST',
-              mode: 'no-cors', // CORS問題を安全にバイパスしてGASに書き込み命令を到達させる
+              mode: 'no-cors', // CORS問題をバイパス
               headers: {
                 'Content-Type': 'application/json'
               },
@@ -979,6 +1019,10 @@
           formatPrice,
           onImageError,
           openOrderModal,
+          onTouchStart,
+          onTouchEnd,
+          onMouseDown,
+          onMouseUp,
           submitPreOrder
         };
       }
