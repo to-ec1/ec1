@@ -159,7 +159,7 @@
              class="bg-white bruna-border rounded-2xl overflow-hidden bruna-shadow flex flex-col justify-between transition-all duration-200"
              :class="[getCardBgClass(index), product.stock === 0 ? 'opacity-70' : '']">
           
-          <!-- 商品画像エリア（スワイプ切り替え対応） -->
+          <!-- 商品画像エリア（スワイプ・ドラッグ切り替え対応） -->
           <div class="relative bg-white bruna-border-b h-72 flex items-center justify-center overflow-hidden select-none cursor-grab active:cursor-grabbing"
                @touchstart="onTouchStart($event, product)"
                @touchend="onTouchEnd($event, product)"
@@ -174,7 +174,7 @@
                  referrerpolicy="no-referrer"
                  @error="onImageError(product, product.current_image_index)">
             
-            <!-- 代替のキャラクター風アイコン -->
+            <!-- 代替のキャラクター風アイコン（画像がない場合） -->
             <div v-else class="w-full h-full flex items-center justify-center pointer-events-none" :class="getIllustrationBg(index)">
               <svg class="w-32 h-32 opacity-90" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <g v-if="index % 4 === 0">
@@ -202,12 +202,19 @@
               </svg>
             </div>
 
-            <!-- 画像カルーセルインジケーター -->
-            <div v-if="product.images && product.images.length > 1" class="absolute inset-x-4 bottom-3 flex justify-between items-center bg-[#FAF6EE] bruna-border px-3 py-1 rounded-xl bruna-shadow-sm text-xs font-bold pointer-events-auto">
-              <button @click.stop="prevImage(product)" class="px-2 py-0.5 hover:bg-gray-200 rounded text-base active:scale-95 transition-transform" title="前の画像">◀</button>
-              <span class="select-none">スワイプで変更 {{ product.current_image_index + 1 }} / {{ product.images.length }}</span>
-              <button @click.stop="nextImage(product)" class="px-2 py-0.5 hover:bg-gray-200 rounded text-base active:scale-95 transition-transform" title="次の画像">▶</button>
-            </div>
+            <!-- 画像カルーセルインジケーター（左右に半透明で「◀」「▶」の三角マークを配置するのみ） -->
+            <button v-if="product.images && product.images.length > 1" 
+                    @click.stop="prevImage(product)" 
+                    class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/10 hover:bg-black/25 text-white active:scale-95 transition-colors rounded-full w-9 h-9 flex items-center justify-center text-xs font-black pointer-events-auto shadow-sm"
+                    title="前の画像">
+              ◀
+            </button>
+            <button v-if="product.images && product.images.length > 1" 
+                    @click.stop="nextImage(product)" 
+                    class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/10 hover:bg-black/25 text-white active:scale-95 transition-colors rounded-full w-9 h-9 flex items-center justify-center text-xs font-black pointer-events-auto shadow-sm"
+                    title="次の画像">
+              ▶
+            </button>
             
             <!-- 価格タグ -->
             <div class="absolute top-4 right-4 bg-[#E32915] text-white px-3 py-2 font-black text-lg bruna-border rounded-xl bruna-shadow-sm pointer-events-none">
@@ -229,7 +236,7 @@
               <!-- 商品名 -->
               <h2 class="text-xl font-black tracking-wide leading-snug">{{ product.title }}</h2>
               
-              <!-- M列：商品概要（【修正点】whitespace-pre-wrap クラスを追加して改行をそのまま再現） -->
+              <!-- M列：商品概要（改行をそのまま再現する whitespace-pre-wrap） -->
               <p v-if="product.overview" class="text-sm font-bold text-gray-500 mt-1 mb-4 leading-relaxed whitespace-pre-wrap">
                 {{ product.overview }}
               </p>
@@ -372,10 +379,10 @@
 
     createApp({
       setup() {
-        // --- デフォルトスプレッドシート共有URL (ご提示のスプシID) ---
+        // --- デフォルトスプレッドシート共有URL ---
         const defaultSpreadsheetUrl = 'https://docs.google.com/spreadsheets/d/1xXFBM8tuBfxLDgDDD9pAmlG9-Uq63aLM-qTci_Gagi4/edit?usp=sharing&sheet=%E5%95%86%E5%93%81';
         const defaultEmail = 'takeonec1@gmail.com';
-        // ご提示いただいたGASのデプロイURLを初期値として直接登録
+        // GASのデプロイURL
         const defaultGasUrl = 'https://script.google.com/macros/s/AKfycbymBVVweV3-Peox6wVPLvyEq8bNGkh2i1Obwmgg4K5e8SsVKhcy9lxHoC8ttHMODh8k/exec';
 
         // --- 状態管理 ---
