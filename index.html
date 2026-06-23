@@ -43,29 +43,82 @@
       transform: translate(2px, 2px);
       box-shadow: 2px 2px 0px 0px #3B2216;
     }
+
+    /* 体・足の出現アニメーション */
+    .character-body {
+      opacity: 0;
+      transform: scaleY(0);
+      transform-origin: top;
+      transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .character-body.active {
+      opacity: 1;
+      transform: scaleY(1);
+    }
+
+    /* トコトコ左右に揺れて歩く歩行アニメーション */
+    @keyframes walk-wobble {
+      0% { transform: rotate(0deg) translateY(0); }
+      25% { transform: rotate(-5deg) translateY(-2.5px); }
+      50% { transform: rotate(0deg) translateY(0); }
+      75% { transform: rotate(5deg) translateY(-2.5px); }
+      100% { transform: rotate(0deg) translateY(0); }
+    }
+    
+    .walking-animation {
+      animation: walk-wobble 0.35s infinite ease-in-out;
+    }
   </style>
 </head>
 <body class="text-[#3B2216] selection:bg-[#FFCD00]">
 
   <div id="app" class="min-h-screen flex flex-col pb-24">
     
-    <!-- ヘッダー（追随しない非固定化仕様・設定ボタンは削除済み） -->
-    <header class="bg-[#FFCD00] bruna-border-b py-6 px-4 text-center shadow-sm">
-      <div class="max-w-4xl mx-auto flex justify-center items-center">
+    <!-- ヘッダー（アニメーションキャラクター内蔵 & 歯車設定削除済み） -->
+    <header class="bg-[#FFCD00] bruna-border-b py-4 px-4 text-center shadow-sm relative overflow-hidden">
+      <div class="max-w-4xl mx-auto flex flex-col items-center relative">
         
-        <div>
-          <h1 class="text-2xl md:text-3xl font-black tracking-wider flex items-center justify-center gap-2">
-            <!-- シンプルなうさぎ風SVGアイコン -->
-            <svg class="w-8 h-8 inline-block" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M35 15C35 7 43 7 43 15V45H35V15Z" fill="#FFFFFF" stroke="#3B2216" stroke-width="8" stroke-linejoin="round"/>
-              <path d="M57 15C57 7 65 7 65 15V45H57V15Z" fill="#FFFFFF" stroke="#3B2216" stroke-width="8" stroke-linejoin="round"/>
-              <path d="M25 45C25 35 75 35 75 45V75C75 85 25 85 25 75V45Z" fill="#FFFFFF" stroke="#3B2216" stroke-width="8" stroke-linejoin="round"/>
-              <circle cx="42" cy="55" r="4" fill="#3B2216"/>
-              <circle cx="58" cy="55" r="4" fill="#3B2216"/>
-              <path d="M47 64L53 70M53 64L47 70" stroke="#3B2216" stroke-width="5" stroke-linecap="round"/>
+        <!-- キャラクター歩行エリア -->
+        <div class="flex items-center justify-center h-28 relative w-full max-w-xs md:max-w-md">
+          
+          <!-- キャラクターコンテナ（マウント1.5秒後から左へ3秒かけてスムーズ移動） -->
+          <div class="absolute cursor-pointer flex flex-col items-center transition-all duration-[3000ms] ease-in-out z-10"
+               :style="{ transform: 'translateX(' + charPositionX + 'px)' }"
+               @click="openAIChat">
+            
+            <!-- ピョコッと浮き出るAI吹き出し案内 -->
+            <transition enter-active-class="transition ease-out duration-300" enter-from-class="opacity-0 scale-75 -translate-y-2" enter-to-class="opacity-100 scale-100 translate-y-0">
+              <div v-if="showAiBubble" class="absolute -top-12 bg-white text-xs font-black px-3 py-1.5 bruna-border rounded-xl bruna-shadow-sm whitespace-nowrap animate-bounce text-[#0051A2]">
+                AI相談はこちら！💡
+              </div>
+            </transition>
+
+            <!-- SVG全身キャラクター（1秒後に体が生えてきます） -->
+            <svg class="w-16 h-16 inline-block" :class="{ 'walking-animation': isWalking }" viewBox="0 0 100 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- 体と足 -->
+              <g id="body-parts" class="character-body" :class="{ 'active': hasBody }">
+                <path d="M35 75L20 100H80L65 75Z" fill="#0051A2" stroke="#3B2216" stroke-width="8" stroke-linejoin="round"/>
+                <path d="M38 100V105C38 107 46 107 46 105V100" stroke="#3B2216" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="#FFFFFF"/>
+                <path d="M54 100V105C54 107 62 107 62 105V100" stroke="#3B2216" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="#FFFFFF"/>
+              </g>
+              <!-- 頭部と耳 -->
+              <g id="head">
+                <path d="M35 15C35 7 43 7 43 15V45H35V15Z" fill="#FFFFFF" stroke="#3B2216" stroke-width="8" stroke-linejoin="round"/>
+                <path d="M57 15C57 7 65 7 65 15V45H57V15Z" fill="#FFFFFF" stroke="#3B2216" stroke-width="8" stroke-linejoin="round"/>
+                <path d="M25 45C25 35 75 35 75 45V75C75 85 25 85 25 75V45Z" fill="#FFFFFF" stroke="#3B2216" stroke-width="8" stroke-linejoin="round"/>
+                <circle cx="42" cy="55" r="4" fill="#3B2216"/>
+                <circle cx="58" cy="55" r="4" fill="#3B2216"/>
+                <path d="M47 64L53 70M53 64L47 70" stroke="#3B2216" stroke-width="5" stroke-linecap="round"/>
+              </g>
             </svg>
-            テイクオンB面
+          </div>
+
+          <!-- メインタイトルロゴ（左側のうさぎスペースを確保して配置崩れを防止） -->
+          <h1 class="text-2xl md:text-3xl font-black tracking-wider flex items-center justify-center gap-2 relative">
+            <div class="w-16 h-16 flex-shrink-0"></div> <!-- うさぎが重なるためのダミースペース -->
+            <span>テイクオンB面</span>
           </h1>
+          
         </div>
 
       </div>
@@ -307,6 +360,92 @@
       </div>
     </transition>
 
+    <!-- AIお悩み相談モーダル（Gemini API連携） -->
+    <transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition ease-in duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div v-if="isAiChatOpen" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 flex items-center justify-center p-4">
+        <div class="bg-white bruna-border rounded-2xl w-full max-w-md p-6 bruna-shadow max-h-[90vh] overflow-y-auto flex flex-col">
+          
+          <!-- モーダルヘッダー -->
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-black text-xl flex items-center gap-2 text-[#0051A2]">
+              <i data-lucide="sparkles" class="w-6 h-6"></i>
+              テイクオン AIお悩み相談
+            </h3>
+            <button @click="isAiChatOpen = false" class="text-gray-500 hover:text-black">
+              <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+          </div>
+
+          <!-- チャットログ表示エリア -->
+          <div class="flex-grow overflow-y-auto bg-[#FAF6EE] bruna-border rounded-xl p-4 mb-4 min-h-[250px] max-h-[400px] flex flex-col space-y-4">
+            
+            <!-- AIの最初のご挨拶 -->
+            <div class="flex items-start gap-2.5">
+              <div class="w-8 h-8 rounded-full bg-[#FFCD00] flex items-center justify-center bruna-border flex-shrink-0 text-xs">🐰</div>
+              <div class="bg-white bruna-border rounded-2xl px-3 py-2 text-sm font-bold shadow-sm max-w-[80%] whitespace-pre-wrap">
+                こんにちは！テイクオンB面の仮注文コンシェルジュだよ。
+                商品について知りたいことや、今日のおすすめ、予算に合わせた相談など、何でもGeminiに聞いてね！
+              </div>
+            </div>
+
+            <!-- チャットのやり取りの履歴 -->
+            <div v-for="(chat, i) in chatHistory" :key="i" class="space-y-4 w-full">
+              <!-- ユーザー発言 -->
+              <div class="flex justify-end w-full">
+                <div class="bg-[#0051A2] text-white bruna-border rounded-2xl px-3 py-2 text-sm font-bold max-w-[80%] whitespace-pre-wrap">
+                  {{ chat.query }}
+                </div>
+              </div>
+              <!-- AI応答 -->
+              <div class="flex items-start gap-2.5 w-full">
+                <div class="w-8 h-8 rounded-full bg-[#FFCD00] flex items-center justify-center bruna-border flex-shrink-0 text-xs">🐰</div>
+                <div class="bg-white bruna-border rounded-2xl px-3 py-2 text-sm font-bold shadow-sm max-w-[80%] whitespace-pre-wrap">
+                  {{ chat.response }}
+                </div>
+              </div>
+            </div>
+
+            <!-- AIローディング表示（ピョコピョコ動く） -->
+            <div v-if="isAiLoading" class="flex items-start gap-2.5">
+              <div class="w-8 h-8 rounded-full bg-[#FFCD00] flex items-center justify-center bruna-border flex-shrink-0 text-xs animate-bounce">🐰</div>
+              <div class="bg-white bruna-border rounded-2xl px-3 py-2 text-sm font-bold shadow-sm flex items-center gap-1">
+                考え中
+                <span class="animate-pulse">.</span>
+                <span class="animate-pulse delay-100">.</span>
+                <span class="animate-pulse delay-200">.</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- クイックお悩み相談質問集 -->
+          <div class="mb-4">
+            <div class="text-xs font-black text-gray-500 mb-1.5">💡 タップしてクイック相談</div>
+            <div class="flex flex-wrap gap-1.5">
+              <button @click="quickAsk('今の一番おすすめの商品は？')" class="bg-white hover:bg-gray-100 text-xs font-bold px-2.5 py-1 rounded-lg bruna-border bruna-shadow-sm bruna-shadow-active">
+                今日のおすすめは？✨
+              </button>
+              <button @click="quickAsk('予算5000円以内でおすすめの組み合わせを教えて')" class="bg-white hover:bg-gray-100 text-xs font-bold px-2.5 py-1 rounded-lg bruna-border bruna-shadow-sm bruna-shadow-active">
+                予算5,000円のお勧めは？💰
+              </button>
+              <button @click="quickAsk('人気商品や新商品の特徴を教えてください')" class="bg-white hover:bg-gray-100 text-xs font-bold px-2.5 py-1 rounded-lg bruna-border bruna-shadow-sm bruna-shadow-active">
+                人気商品の魅力を教えて！🌟
+              </button>
+            </div>
+          </div>
+
+          <!-- 入力送信フォーム -->
+          <div class="flex gap-2">
+            <input type="text" v-model="aiQuery" @keyup.enter="askGeminiAI" placeholder="AIにおすすめを聞いてみる..." class="flex-grow px-3 py-2.5 bruna-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0051A2] font-bold">
+            <button @click="askGeminiAI" :disabled="isAiLoading || !aiQuery.trim()" class="bg-[#0051A2] text-white px-4 py-2.5 rounded-xl font-bold text-sm bruna-border bruna-shadow-sm bruna-shadow-active hover:bg-[#003D7A] transition-colors disabled:opacity-50 flex items-center justify-center">
+              <i data-lucide="send" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </transition>
+
     <!-- フッター -->
     <footer class="bg-[#5D3725] text-white bruna-border-t py-6 px-4 text-center mt-auto">
       <div class="max-w-4xl mx-auto text-sm font-bold opacity-90">
@@ -332,7 +471,6 @@
         const emailDestination = ref(localStorage.getItem('bruna_email_destination') || defaultEmail);
         const gasUrl = ref(localStorage.getItem('takeon_gas_url') || defaultGasUrl);
         
-        const isConfigOpen = ref(false);
         const isOrderModalOpen = ref(false);
         const isLoading = ref(false);
         const isSending = ref(false);
@@ -346,6 +484,18 @@
           contact: '',
           memo: ''
         });
+
+        // キャラクターアニメーション用のリアクティブ状態
+        const hasBody = ref(false);
+        const isWalking = ref(false);
+        const charPositionX = ref(120); // 初期右ポジション（ロゴのさらに右側）
+        const showAiBubble = ref(false);
+
+        // AIチャット（Gemini連携）用状態
+        const isAiChatOpen = ref(false);
+        const aiQuery = ref('');
+        const chatHistory = ref([]);
+        const isAiLoading = ref(false);
 
         // スワイプおよびドラッグ操作による画像切り替え追跡変数
         const dragStartX = ref(0);
@@ -406,6 +556,24 @@
               lucide.createIcons();
             }
           });
+
+          // 【ヘッダーアニメーション起動フロー】
+          // 1. ロードから1秒後、体がピョコンと生え出現
+          setTimeout(() => {
+            hasBody.value = true;
+            
+            // 2. さらに0.5秒後、歩くアニメーションを開始し左へ移動
+            setTimeout(() => {
+              isWalking.value = true;
+              charPositionX.value = -90; // タイトルの左側のダミースペースの真上にピッタリと着地
+              
+              // 3. 移動完了（3秒後、計4.5秒時点）にトコトコを止め、相談吹き出しを起動
+              setTimeout(() => {
+                isWalking.value = false;
+                showAiBubble.value = true;
+              }, 3000);
+            }, 500);
+          }, 1000);
         });
 
         // --- メソッド ---
@@ -901,6 +1069,89 @@
           }
         };
 
+        // --- 【新規】AI相談窓口（Geminiコール）機能関連 ---
+        const openAIChat = () => {
+          isAiChatOpen.value = true;
+          nextTick(() => {
+            if (typeof lucide !== 'undefined') {
+              lucide.createIcons();
+            }
+          });
+        };
+
+        const quickAsk = (question) => {
+          aiQuery.value = question;
+          askGeminiAI();
+        };
+
+        const askGeminiAI = async () => {
+          if (isAiLoading.value || !aiQuery.value.trim()) return;
+
+          const query = aiQuery.value.trim();
+          aiQuery.value = '';
+          isAiLoading.value = true;
+
+          try {
+            const response = await callGeminiAPI(query);
+            chatHistory.value.push({ query, response });
+          } catch (err) {
+            console.error(err);
+            chatHistory.value.push({ query, response: err.message || "お返事の受信中にエラーが発生しました。少しお時間をおいてもう一度聞いてみてね。" });
+          } finally {
+            isAiLoading.value = false;
+          }
+        };
+
+        // Gemini 2.5 Flash への非ストリーミングアクセス (指数バックオフ搭載)
+        const callGeminiAPI = async (userQuery) => {
+          const apiKey = ""; // ランタイム環境が自動付与
+          const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+          // 動的なお取り扱い商品コンテキスト情報の作成
+          const productContext = products.value.map(p => {
+            return `- 商品名: ${p.title}\n  商品概要: ${p.overview || 'なし'}\n  税込価格: ¥${p.price_with_tax.toLocaleString()}円\n  在庫状況: ${p.stock > 0 ? p.stock + '個の在庫あり' : 'SOLD OUT (只今品切れ中)'}`;
+          }).join("\n");
+
+          const systemPrompt = `あなたは親しみやすく温かい「テイクオンB面」のAIキャラクターアシスタントです。
+スプレッドシートからリアルタイムに読み込まれた以下の最新の商品カタログ情報を完全に把握しています。
+---
+[取り扱い商品リスト]
+${productContext}
+---
+お客様からお勧め商品や、使い方、予算内の選び方などについて質問されたら、上記のリストを基に丁寧に答えてください。
+話し方は、テイクオンの丸みのある優しい雰囲気に合わせ、温かい絵本風の口調（「〜だよ」「〜ね」「〜かな？」など、少し愛らしいテイスト）に統一してください。
+取り扱い商品リストにない商品については、現在取り扱っていないと答えてね。
+在庫数が0個のSOLD OUT品については、品切れ中であることを正しく教えてあげてください。
+回答は親しみやすく、最大200文字程度で簡潔に分かりやすくお返事してね。`;
+
+          const payload = {
+            contents: [{ parts: [{ text: userQuery }] }],
+            systemInstruction: { parts: [{ text: systemPrompt }] }
+          };
+
+          let delay = 1000;
+          for (let attempt = 1; attempt <= 5; attempt++) {
+            try {
+              const response = await fetch(endpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+              });
+              if (!response.ok) throw new Error("HTTP error " + response.status);
+              const result = await response.json();
+              const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (text) return text;
+              throw new Error("Invalid structure");
+            } catch (err) {
+              if (attempt === 5) {
+                throw new Error("Gemini AIとの接続に失敗しました。少しお時間をおいてから再度お試しください。");
+              }
+              await new Promise(resolve => setTimeout(resolve, delay));
+              delay *= 2; // 指数バックオフ (1s, 2s, 4s, 8s, 16s)
+            }
+          }
+        };
+
         return {
           spreadsheetUrl,
           emailDestination,
@@ -929,7 +1180,22 @@
           onTouchEnd,
           onMouseDown,
           onMouseUp,
-          submitPreOrder
+          submitPreOrder,
+          
+          // キャラクターアニメーションステート
+          hasBody,
+          isWalking,
+          charPositionX,
+          showAiBubble,
+
+          // AIチャットステート・メソッド
+          isAiChatOpen,
+          aiQuery,
+          chatHistory,
+          isAiLoading,
+          openAIChat,
+          quickAsk,
+          askGeminiAI
         };
       }
     }).mount('#app');
