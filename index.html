@@ -10,7 +10,7 @@
   <!-- Google Fonts: Zen Maru Gothic -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght=500;700;900&display=swap" rel="stylesheet">
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- Vue.js 3 -->
@@ -84,10 +84,10 @@
                :style="{ transform: 'translateX(' + charPositionX + 'px)' }"
                @click="openAIChat">
             
-            <!-- 吹き出し案内 -->
+            <!-- 吹き出し案内 (起動直後にテッフィーが優しくお出迎え) -->
             <transition enter-active-class="transition ease-out duration-300" enter-from-class="opacity-0 scale-75 -translate-y-2" enter-to-class="opacity-100 scale-100 translate-y-0">
               <div v-if="showAiBubble" class="absolute -top-12 bg-white text-xs font-black px-3 py-1.5 teffy-border rounded-xl teffy-shadow-sm whitespace-nowrap animate-bounce text-[#0051A2]">
-                AI相談はこちら！💡
+                こんにちは、テッフィーだよ。何でも気軽に聞いてね！
               </div>
             </transition>
 
@@ -99,7 +99,7 @@
                 <path d="M38 100V105C38 107 46 107 46 105V100" stroke="#3B2216" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="#FFFFFF"/>
                 <path d="M54 100V105C54 107 62 107 62 105V100" stroke="#3B2216" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="#FFFFFF"/>
               </g>
-              <!-- 頭部と耳 -->
+              <!-- 頭部と耳 (耳の塗りを完全に白 #FFFFFF に固定) -->
               <g id="head">
                 <path d="M35 15C35 7 43 7 43 15V45H35V15Z" fill="#FFFFFF" stroke="#3B2216" stroke-width="8" stroke-linejoin="round"/>
                 <path d="M57 15C57 7 65 7 65 15V45H57V15Z" fill="#FFFFFF" stroke="#3B2216" stroke-width="8" stroke-linejoin="round"/>
@@ -125,7 +125,7 @@
     <!-- メインコンテンツ -->
     <main class="flex-grow max-w-4xl w-full mx-auto px-4 py-8">
       
-      <!-- ローディング表示 -->
+      <!-- ローディング表示 (スプレッドシートデータ取得中...の文字を完全に削除し、スピナーだけに統一) -->
       <div v-if="isLoading" class="text-center py-20">
         <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-[#3B2216] border-t-[#FFCD00]"></div>
       </div>
@@ -507,7 +507,7 @@
             display_jan: "4901234567892",
             images: [],
             current_image_index: 0,
-            overview: "JAN1が空欄のため、JAN2のデータが自動フォールバック表示されています。"
+            overview: "JAN1が空欄のため、JAN2 of データが自動フォールバック表示されています。"
           }
         ];
 
