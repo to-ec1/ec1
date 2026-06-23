@@ -101,10 +101,19 @@
             </div>
 
             <div>
-              <label class="block text-sm font-bold mb-1 text-[#3B2216]">送信先注文用メールアドレス</label>
+              <label class="block text-sm font-bold mb-1 text-[#3B2216]">送信先仮注文用メールアドレス</label>
               <input type="email" v-model="tempEmailDestination" placeholder="example@gmail.com" class="w-full px-3 py-2 bruna-border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0051A2] text-sm font-bold">
               <p class="text-xs text-gray-600 mt-1">
-                ※デフォルトで <strong>takeonec1@gmail.com</strong> に送信されるよう設定してあります。
+                ※デフォルトで <strong>takeonec1@gmail.com</strong> に設定してあります。
+              </p>
+            </div>
+
+            <!-- 在庫を自動で減算するためのGAS WebアプリのURL -->
+            <div>
+              <label class="block text-sm font-bold mb-1 text-[#3B2216]">在庫減算用GAS APIのURL (任意)</label>
+              <input type="text" v-model="tempGasUrl" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3 py-2 bruna-border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0051A2] text-sm font-bold">
+              <p class="text-xs text-gray-600 mt-1">
+                ※仮発注時にスプシ側の在庫をその数量分自動で減算するためのGAS（Webアプリ）のURLを入力します。
               </p>
             </div>
 
@@ -153,7 +162,7 @@
           <!-- 商品画像エリア -->
           <div class="relative bg-white bruna-border-b h-72 flex items-center justify-center overflow-hidden">
             
-            <!-- カルーセルメイン画像 -->
+            <!-- カルーセルメイン画像（スマートフォン対応属性を維持） -->
             <img v-if="product.images && product.images.length > 0 && product.images[product.current_image_index]" 
                  :src="product.images[product.current_image_index]" 
                  :alt="product.title" 
@@ -161,7 +170,7 @@
                  referrerpolicy="no-referrer"
                  @error="onImageError(product, product.current_image_index)">
             
-            <!-- 代替のキャラクター風アイコン -->
+            <!-- 代替のキャラクター風アイコン（画像がない場合） -->
             <div v-else class="w-full h-full flex items-center justify-center" :class="getIllustrationBg(index)">
               <svg class="w-32 h-32 opacity-90" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <g v-if="index % 4 === 0">
@@ -196,7 +205,7 @@
               <button @click.stop="nextImage(product)" class="px-2 py-0.5 hover:bg-gray-200 rounded text-base active:scale-95 transition-transform" title="次の画像">▶</button>
             </div>
             
-            <!-- 価格タグ (税率をスプシから取得して税込価格のみを表示) -->
+            <!-- 価格タグ -->
             <div class="absolute top-4 right-4 bg-[#E32915] text-white px-3 py-2 font-black text-lg bruna-border rounded-xl bruna-shadow-sm">
               <div class="text-xs opacity-90 text-center font-bold">税込価格({{ product.tax_percent }}%)</div>
               ¥{{ formatPrice(product.price_with_tax) }}
@@ -221,10 +230,10 @@
                 {{ product.overview }}
               </p>
 
-              <!-- 現在庫数とJANコードをスッキリ横並びに配置 -->
+              <!-- 現在庫数とJANコード（表記の修正：Currently in Stock: → 在庫数: に変更） -->
               <div class="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-black text-gray-700">
                 <span>
-                  Currently in Stock: <span :class="product.stock <= 5 ? 'text-[#E32915]' : ''">{{ product.stock }}個</span>
+                  在庫数: <span :class="product.stock <= 5 ? 'text-[#E32915]' : ''">{{ product.stock }}個</span>
                 </span>
                 <span v-if="product.display_jan" class="text-gray-500">
                   JAN: <span class="text-[#3B2216] font-mono">{{ product.display_jan }}</span>
@@ -260,7 +269,7 @@
         <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div class="text-center sm:text-left">
             <span class="bg-[#0051A2] text-white px-2 py-1 text-xs font-bold rounded bruna-border bruna-shadow-sm mr-2">
-              注文予定
+              仮注文予定
             </span>
             <span class="font-black text-lg text-[#3B2216]">{{ totalItems }}点 のアイテム</span>
             <span class="mx-2 text-gray-300">|</span>
@@ -269,7 +278,7 @@
           
           <button @click="openOrderModal" class="w-full sm:w-auto bg-[#E32915] text-white px-8 py-3 rounded-xl font-black text-lg bruna-border bruna-shadow bruna-shadow-active hover:bg-[#C51F0D] flex items-center justify-center gap-2 transition-colors">
             <i data-lucide="shopping-bag" class="w-5 h-5"></i>
-            注文手続きに進む
+            仮注文手続きに進む
           </button>
         </div>
       </div>
@@ -283,11 +292,16 @@
           <div class="flex justify-between items-center mb-4">
             <h3 class="font-black text-xl flex items-center gap-2">
               <i data-lucide="clipboard-check" class="text-[#008940]"></i>
-              ご注文内容の確認
+              ご仮注文内容の確認
             </h3>
             <button @click="isOrderModalOpen = false" class="text-gray-500 hover:text-black">
               <i data-lucide="x" class="w-6 h-6"></i>
             </button>
+          </div>
+
+          <!-- スーパーデリバリー用仮注文 警告表示 -->
+          <div class="bg-[#FFCD00]/25 bruna-border rounded-xl p-4 mb-4 text-xs font-bold leading-relaxed text-[#3B2216]">
+            ⚠️ <span class="text-[#E32915]">※在庫確認の上、スーパーデリバリーのメッセージより発注書を送信いたします。</span>
           </div>
 
           <!-- 注文商品リスト -->
@@ -323,7 +337,7 @@
               <input type="text" v-model="customerInfo.contact" placeholder="090-0000-0000 / sample@mail.com" class="w-full px-3 py-2 bruna-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0051A2] font-bold">
             </div>
             <div>
-              <label class="block text-xs font-bold mb-1 text-[#3B2216]">お届け先ご住所（配送をご希望の方のみ）</label>
+              <label class="block text-xs font-bold mb-1 text-[#3B2216]">お届け先ご住所（任意）</label>
               <input type="text" v-model="customerInfo.address" placeholder="お届け先住所を入力" class="w-full px-3 py-2 bruna-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0051A2] font-bold">
             </div>
             <div>
@@ -332,29 +346,31 @@
             </div>
           </div>
 
-          <!-- 注文送信ボタン -->
+          <!-- 注文送信ボタン（メールのみ必須で残し、他はコメントアウト） -->
           <div class="space-y-3 border-t border-[#3B2216]/10 pt-4">
             <div class="text-[11px] font-black text-center text-gray-500 mb-2">
               送信先メールアドレス: {{ emailDestination }}
             </div>
 
-            <!-- メールで注文する -->
-            <button @click="sendViaEmail" class="w-full bg-[#0051A2] text-white py-3.5 rounded-xl font-bold text-sm bruna-border bruna-shadow-sm bruna-shadow-active hover:bg-[#003D7A] flex items-center justify-center gap-2 transition-colors">
+            <!-- メールで仮注文する -->
+            <button @click="sendViaEmail" :disabled="isSending" class="w-full bg-[#0051A2] text-white py-3.5 rounded-xl font-bold text-sm bruna-border bruna-shadow-sm bruna-shadow-active hover:bg-[#003D7A] flex items-center justify-center gap-2 transition-colors disabled:opacity-50">
               <i data-lucide="mail" class="w-5 h-5"></i>
-              メールアプリを起動して送信する
+              <span>{{ isSending ? '在庫確保＆送信処理中...' : 'メールアプリを起動して仮注文する' }}</span>
             </button>
 
-            <!-- LINEで注文する -->
+            <!-- LINEで注文する（指示によりコメントアウト）
             <button @click="sendViaLine" class="w-full bg-[#06C755] text-white py-3 rounded-xl font-bold text-sm bruna-border bruna-shadow-sm bruna-shadow-active hover:opacity-95 flex items-center justify-center gap-2 transition-opacity">
               <svg class="w-5 h-5 fill-white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M24 10.3c0-5.7-5.4-10.3-12-10.3S0 4.6 0 10.3c0 5.1 4.3 9.3 10.1 10.1.4.1.9.4.1 1.2l-.6 2.6c-.2.8.3.8.7.5 3.3-2.2 6.5-4.8 7.3-6.2 4.1-2.2 6.5-5.3 6.5-8.2zM8.1 13H6.6c-.3 0-.5-.2-.5-.5v-4.9c0-.3.2-.5.5-.5h1.5c.3 0 .5.2.5.5s-.2.5-.5.5H7.1v1.5h1c.3 0 .5.2.5.5s-.2.5-.5.5H7.1v1.5h1c.3 0 .5.2.5.5s-.2.5-.5.5zm4.3-4.9c0 .3-.2.5-.5.5H11v3.9c0 .3-.2.5-.5.5s-.5-.2-.5-.5V8.6c0-.3.2-.5.5-.5h1c.3 0 .4.2.4.5zm3.8 4.9c0 .3-.2.5-.5.5h-1.5c-.3 0-.5-.2-.5-.5v-4.9c0-.3.2-.5.5-.5s.5.2.5.5v3.9h1c.3 0 .5.2.5.5zm3.8 0c0 .3-.2.5-.5.5h-1.5c-.3 0-.5-.2-.5-.5v-4.9c0-.3.2-.5.5-.5h1.5c.3 0 .5.2.5.5s-.2.5-.5.5h-1v1.5h1c.3 0 .5.2.5.5s-.2.5-.5.5h-1v1.5h1c.3 0 .5.2.5.5s-.2.5-.5.5z"/></svg>
-              LINE経由で注文メッセージを送信
+              LINE経由で仮注文メッセージを送信
             </button>
+            -->
 
-            <!-- クリップボードにコピー -->
+            <!-- クリップボードにコピー（指示によりコメントアウト）
             <button @click="copyOrderText" class="w-full bg-white text-gray-700 py-3 rounded-xl font-bold text-sm bruna-border bruna-shadow-sm bruna-shadow-active hover:bg-gray-100 flex items-center justify-center gap-2 transition-colors">
               <i data-lucide="copy" class="w-5 h-5"></i>
-              注文メッセージをコピー
+              仮注文メッセージをコピー
             </button>
+            -->
           </div>
 
         </div>
@@ -378,17 +394,21 @@
         // --- デフォルトスプレッドシート共有URL (ご提示のスプシID) ---
         const defaultSpreadsheetUrl = 'https://docs.google.com/spreadsheets/d/1xXFBM8tuBfxLDgDDD9pAmlG9-Uq63aLM-qTci_Gagi4/edit?usp=sharing&sheet=%E5%95%86%E5%93%81';
         const defaultEmail = 'takeonec1@gmail.com';
+        const defaultGasUrl = localStorage.getItem('takeon_gas_url') || '';
 
         // --- 状態管理 ---
         const spreadsheetUrl = ref(localStorage.getItem('bruna_spreadsheet_url') || defaultSpreadsheetUrl);
         const emailDestination = ref(localStorage.getItem('bruna_email_destination') || defaultEmail);
+        const gasUrl = ref(defaultGasUrl);
         
         const tempSpreadsheetUrl = ref(spreadsheetUrl.value);
         const tempEmailDestination = ref(emailDestination.value);
+        const tempGasUrl = ref(gasUrl.value);
         
         const isConfigOpen = ref(false);
         const isOrderModalOpen = ref(false);
         const isLoading = ref(false);
+        const isSending = ref(false);
         const error = ref(null);
         
         const products = ref([]);
@@ -401,7 +421,7 @@
           memo: ''
         });
 
-        // デモデータ (スプシ読み込みエラー時等のフォールバック用)
+        // デモデータ
         const demoProducts = [
           {
             title: "デモ商品A: テイクオン・おうちのクッション",
@@ -409,14 +429,11 @@
             price_with_tax: 3520,
             tax_percent: 10,
             stock: 10,
-            cord_ne: "NE-101",
-            cord_al: "AL-999",
-            jan1: "4901234567890",
-            jan2: "",
             display_jan: "4901234567890",
             images: [],
             current_image_index: 0,
-            overview: "テイクオンおなじみの丸ゴシック調で構成された可愛いクッションです。"
+            overview: "テイクオンおなじみの丸ゴシック調で構成された可愛いクッションです。",
+            rowIndex: 2
           },
           {
             title: "デモ商品B: 飾れるフラワーマグカップ",
@@ -424,14 +441,11 @@
             price_with_tax: 1980,
             tax_percent: 10,
             stock: 0,
-            cord_ne: "NE-102",
-            cord_al: "AL-888",
-            jan1: "",
-            jan2: "4901234567892",
             display_jan: "4901234567892",
             images: [],
             current_image_index: 0,
-            overview: "JAN1が空欄のため、JAN2のデータが自動フォールバック表示されています。"
+            overview: "JAN1が空欄のため、JAN2のデータが自動フォールバック表示されています。",
+            rowIndex: 3
           }
         ];
 
@@ -469,20 +483,17 @@
 
         // --- メソッド ---
 
-        // スプレッドシートURLからIDとシート名を抽出するヘルパー
         const extractSpreadsheetDetails = (url) => {
           let id = '1xXFBM8tuBfxLDgDDD9pAmlG9-Uq63aLM-qTci_Gagi4';
           let sheet = '商品';
 
           if (!url) return { id, sheet, gid: '' };
 
-          // スプレッドシートIDを抽出
           const idMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
           if (idMatch && idMatch[1]) {
             id = idMatch[1];
           }
 
-          // URL全体からsheet名やgidを頑健に抽出
           const decodedUrl = decodeURIComponent(url);
           const sheetMatch = decodedUrl.match(/[?&#]sheet=([^&]+)/);
           const gidMatch = decodedUrl.match(/[?&#]gid=([^&]+)/);
@@ -498,14 +509,13 @@
           return { id, sheet, gid: gidMatch ? gidMatch[1] : '' };
         };
 
-        // CORSエラーを100%安全にバイパスするためのJSONP通信処理
         const fetchSpreadsheetJsonp = (spreadsheetId, sheetName, gid) => {
           return new Promise((resolve, reject) => {
             const callbackName = 'gvizCallback_' + Math.random().toString(36).substring(2, 9);
             
             const timeoutId = setTimeout(() => {
               cleanup();
-              reject(new Error('スプレッドシートの応答がタイムアウトしました。共有権限（リンクを知っている全員が閲覧者）をご確認ください。'));
+              reject(new Error('スプレッドシートの応答がタイムアウトしました。共有権限をご確認ください。'));
             }, 8000);
 
             const cleanup = () => {
@@ -533,7 +543,6 @@
             }
 
             script.src = srcUrl;
-            
             script.onerror = () => {
               cleanup();
               reject(new Error('データの読み込み中にエラーが発生しました。'));
@@ -543,7 +552,6 @@
           });
         };
 
-        // スプレッドシートデータの取得とバインドのメインフロー
         const loadSpreadsheetData = async () => {
           isLoading.value = true;
           error.value = null;
@@ -575,20 +583,16 @@
           }
         };
 
-        // Google Visualization API JSON データのパーサー
-        // 動的なヘッダー名自動マッチングを完全に実装し、カラムのズレを永久的に防止します
         const parseGvizData = (data) => {
           if (!data || !data.table || !data.table.rows) return [];
 
           const cols = data.table.cols;
           let rows = data.table.rows;
           
-          // ヘッダー名（カラム名）からインデックスへのマッピングを作成
           const headerMap = {};
           let headerFound = false;
           let headerRowIndex = -1;
           
-          // 1. スプレッドシートの全行を走査して「商品名」などのキーを含む【本物のヘッダー行】を動的に検出（ノイズ行・空行対策）
           for (let i = 0; i < rows.length; i++) {
             const row = rows[i];
             if (!row || !row.c) continue;
@@ -598,11 +602,9 @@
             
             row.c.forEach((cell, idx) => {
               if (cell && cell.v !== null && cell.v !== undefined) {
-                // スペースや改行などを完全に除去してキーを正規化
                 const val = String(cell.v).trim().replace(/[\s　\r\n]/g, '');
                 tempMap[val] = idx;
                 
-                // 代表的な商品名ヘッダーのキーワード候補
                 if (['商品名', '商品', 'title', 'name'].includes(val)) {
                   hasProductTitleHeader = true;
                 }
@@ -617,7 +619,6 @@
             }
           }
 
-          // 2. 動的スキャンでヘッダーが見つからなかった場合のフォールバック（APIラベル）
           if (!headerFound) {
             let hasLabels = false;
             cols.forEach((col, idx) => {
@@ -644,22 +645,19 @@
               }
             } else {
               headerFound = true;
-              headerRowIndex = -1; // APIのラベルをヘッダーとして使用
+              headerRowIndex = -1;
             }
           }
 
           if (!headerFound && Object.keys(headerMap).length === 0) return [];
 
           const result = [];
-          
-          // ヘッダー行の次の行からデータを実質処理
           const startDataRowIndex = headerRowIndex + 1;
 
           for (let i = startDataRowIndex; i < rows.length; i++) {
             const row = rows[i];
             if (!row || !row.c) continue;
 
-            // 複数の候補キーから、表記揺れを吸収しつつ部分一致も含めて値を取得する関数
             const getValueByKeys = (targetKeys) => {
               const normalize = (str) => {
                 return str.toLowerCase()
@@ -686,7 +684,7 @@
             };
 
             const title = String(getValueByKeys(['商品名', 'title', 'name'])).trim();
-            if (!title) continue; // 商品名が空の行はスキップ
+            if (!title) continue;
 
             const priceVal = getValueByKeys(['売価(税抜)', '売価（税抜）', '売価', 'price', 'price_ex_tax']);
             const priceExTax = parseInt(priceVal) || 0;
@@ -694,18 +692,15 @@
             const stockVal = getValueByKeys(['在庫数', '在庫', 'stock']);
             const stock = (stockVal === '' || stockVal === undefined) ? 999 : (parseInt(stockVal) || 0);
 
-            // JANコードの判定ロジック: JAN1を優先、JAN1が空ならJAN2を表示
             const jan1 = String(getValueByKeys(['jan1', 'JAN1', 'janコード1'])).trim();
             const jan2 = String(getValueByKeys(['jan2', 'JAN2', 'janコード2'])).trim();
             const displayJan = jan1 !== '' ? jan1 : jan2;
 
-            // N列（税率）の動的な取得およびパース処理
             const taxRateRaw = String(getValueByKeys(['税率', '消費税率', 'tax_rate', 'tax'])).trim();
-            let taxPercent = 10; // デフォルト値は10%
+            let taxPercent = 10;
             if (taxRateRaw !== '') {
               const num = parseFloat(taxRateRaw.replace(/%/g, ''));
               if (!isNaN(num)) {
-                // スプシで「0.08」などの小数表記になっている場合は100倍してパーセントにする
                 if (num > 0 && num < 1 && !taxRateRaw.includes('%')) {
                   taxPercent = Math.round(num * 100);
                 } else {
@@ -714,10 +709,8 @@
               }
             }
 
-            // 動的税率を元に、税込価格を正しく計算
             const priceWithTax = Math.floor(priceExTax * (1 + taxPercent / 100));
 
-            // 画像リンク1〜5の読み込み
             const img1 = String(getValueByKeys(['画像リンク1', '画像1', 'image1', 'image_url1']));
             const img2 = String(getValueByKeys(['画像リンク2', '画像2', 'image2', 'image_url2']));
             const img3 = String(getValueByKeys(['画像リンク3', '画像3', 'image3', 'image_url3']));
@@ -730,11 +723,14 @@
 
             const overview = String(getValueByKeys(['商品概要', '概要', 'overview'])).trim();
 
+            // スプレッドシート上の絶対的な行番号 (iは0始まり、Google Vis APIのrows配列、実スプシの行は i + 2)
+            const absoluteRowIndex = i + 2;
+
             result.push({
               title,
               price: priceExTax,
               price_with_tax: priceWithTax,
-              tax_percent: taxPercent, // 取得した税率の受け渡し
+              tax_percent: taxPercent,
               stock,
               cord_ne: String(getValueByKeys(['cord_ne', 'ne'])),
               cord_al: String(getValueByKeys(['cord_al', 'al'])),
@@ -743,13 +739,13 @@
               display_jan: displayJan,
               images,
               current_image_index: 0,
-              overview
+              overview,
+              rowIndex: absoluteRowIndex // 在庫減算用のスプシ物理行インデックスを登録
             });
           }
           return result;
         };
 
-        // Googleドライブ画像をスマートフォンでもブロックされにくい形式に高度に変換
         const convertDriveUrl = (url, type = 'lh3') => {
           if (!url) return '';
           
@@ -772,7 +768,6 @@
           return url;
         };
 
-        // カルーセルコントロール
         const nextImage = (product) => {
           if (product.images.length > 1) {
             product.current_image_index = (product.current_image_index + 1) % product.images.length;
@@ -785,35 +780,37 @@
           }
         };
 
-        // 接続先設定保存
         const saveSettings = () => {
           spreadsheetUrl.value = tempSpreadsheetUrl.value.trim();
           emailDestination.value = tempEmailDestination.value.trim();
+          gasUrl.value = tempGasUrl.value.trim();
           
           localStorage.setItem('bruna_spreadsheet_url', spreadsheetUrl.value);
           localStorage.setItem('bruna_email_destination', emailDestination.value);
+          localStorage.setItem('takeon_gas_url', gasUrl.value);
           
           isConfigOpen.value = false;
           loadSpreadsheetData();
         };
 
-        // 設定のリセット
         const resetSettings = () => {
           if (confirm('接続設定を最初の状態（ takeonec1@gmail.com 宛て、ご指定のスプシ ）にリセットしますか？')) {
             spreadsheetUrl.value = defaultSpreadsheetUrl;
             emailDestination.value = defaultEmail;
+            gasUrl.value = '';
             
             tempSpreadsheetUrl.value = defaultSpreadsheetUrl;
             tempEmailDestination.value = defaultEmail;
+            tempGasUrl.value = '';
             
             localStorage.removeItem('bruna_spreadsheet_url');
             localStorage.removeItem('bruna_email_destination');
+            localStorage.removeItem('takeon_gas_url');
             isConfigOpen.value = false;
             loadSpreadsheetData();
           }
         };
 
-        // カート初期化
         const resetCart = () => {
           cart.value = {};
           products.value.forEach((_, index) => {
@@ -844,7 +841,6 @@
           }
         };
 
-        // スマホ対応：画像ロード失敗時のリトライ・フォールバック機構
         const onImageError = (product, imgIndex) => {
           const currentUrl = product.images[imgIndex];
           
@@ -890,26 +886,26 @@
 
         const validateForm = () => {
           if (!customerInfo.value.name.trim() || !customerInfo.value.contact.trim()) {
-            alert('お名前とご連絡先は、注文手続きのためにご入力が必要です。');
+            alert('お名前とご連絡先は、仮注文手続きのためにご入力が必要です。');
             return false;
           }
           return true;
         };
 
-        // 注文文面の構築（テイクオンマーケット＆JAN連携に最適化）
+        // 注文文面の構築（仮注文＆スーパーデリバリーの案内を組み込み）
         const buildOrderMessage = () => {
-          let msg = `🌟 【テイクオン・マーケット 注文依頼】 🌟\n`;
+          let msg = `🌟 【テイクオン・マーケット 仮注文依頼】 🌟\n`;
           msg += `---------------------------\n`;
           msg += `👤 お名前: ${customerInfo.value.name}\n`;
           msg += `📞 連絡先: ${customerInfo.value.contact}\n`;
           if (customerInfo.value.address) {
-            msg += `📍 お届け先住所: ${customerInfo.value.address}\n`;
+            msg += `📍 お届け先住所(任意): ${customerInfo.value.address}\n`;
           }
           if (customerInfo.value.memo) {
-            msg += `📝 ご要望・備考欄: ${customerInfo.value.memo}\n`;
+            msg += `📝 ご要望・備考欄(任意): ${customerInfo.value.memo}\n`;
           }
           msg += `---------------------------\n`;
-          msg += `📦 注文商品一覧:\n`;
+          msg += `📦 仮注文商品一覧:\n`;
           
           cartItems.value.forEach(item => {
             msg += `・ ${item.title}\n`;
@@ -922,20 +918,63 @@
           msg += `---------------------------\n`;
           msg += `💰 総合計金額: ¥${totalPrice.value.toLocaleString()} (税込)\n`;
           msg += `---------------------------\n`;
-          msg += `※この注文はブラウザから送信メールとして構成されました。`;
+          msg += `※在庫確認の上、スーパーデリバリーのメッセージより発注書を送信いたします。\n`;
+          msg += `---------------------------\n`;
+          msg += `※この仮注文はブラウザから送信メールとして構成されました。`;
           return msg;
         };
 
-        // ① メールで注文
-        const sendViaEmail = () => {
+        // ① メールで仮注文（並行してGASに在庫減算命令を送る）
+        const sendViaEmail = async () => {
           if (!validateForm()) return;
+
           const text = buildOrderMessage();
           const targetEmail = emailDestination.value;
-          const mailtoUrl = `mailto:${targetEmail}?subject=${encodeURIComponent('テイクオン商品注文申込み')}&body=${encodeURIComponent(text)}`;
+
+          // GASのURLが登録されている場合、非同期でGoogleスプレッドシートの在庫数を減算するAPIを叩く
+          if (gasUrl.value) {
+            isSending.value = true;
+            try {
+              // 減算対象の行と減算数量のデータを生成
+              const updatePayload = {
+                items: cartItems.value.map(item => ({
+                  rowIndex: item.rowIndex,
+                  quantity: item.quantity
+                }))
+              };
+
+              // GASのCORS制約を考慮し、非同期でPOST通信
+              await fetch(gasUrl.value, {
+                method: 'POST',
+                mode: 'no-cors', // no-corsにより安全にGASにリクエストを受け入れさせます
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updatePayload)
+              });
+              
+            } catch (apiError) {
+              console.error("在庫自動差し引きエラー:", apiError);
+            } finally {
+              isSending.value = false;
+            }
+          }
+
+          // メールアプリを起動
+          const mailtoUrl = `mailto:${targetEmail}?subject=${encodeURIComponent('テイクオン仮注文申込み')}&body=${encodeURIComponent(text)}`;
           window.location.href = mailtoUrl;
+
+          // モーダルを閉じてカートをクリアする
+          isOrderModalOpen.value = false;
+          resetCart();
+          
+          // 在庫を差し引いた最新状態に画面を即時リロードして同期
+          setTimeout(() => {
+            loadSpreadsheetData();
+          }, 1500);
         };
 
-        // ② LINEで注文
+        // LINEで注文
         const sendViaLine = () => {
           if (!validateForm()) return;
           const text = buildOrderMessage();
@@ -943,7 +982,7 @@
           window.open(lineUrl, '_blank');
         };
 
-        // ③ クリップボードコピー
+        // クリップボードコピー
         const copyOrderText = () => {
           if (!validateForm()) return;
           const text = buildOrderMessage();
@@ -954,9 +993,9 @@
           textarea.select();
           try {
             document.execCommand('copy');
-            alert('注文内容のテキストをクリップボードにコピーしました！そのまま貼り付けてご連絡等にご利用ください。');
+            alert('仮注文内容のテキストをクリップボードにコピーしました！');
           } catch (err) {
-            alert('コピーに失敗しました。大変お手数ですが選択してコピーしてください。');
+            alert('コピーに失敗しました。');
           }
           document.body.removeChild(textarea);
         };
@@ -964,11 +1003,14 @@
         return {
           spreadsheetUrl,
           emailDestination,
+          gasUrl,
           tempSpreadsheetUrl,
           tempEmailDestination,
+          tempGasUrl,
           isConfigOpen,
           isOrderModalOpen,
           isLoading,
+          isSending,
           error,
           products,
           customerInfo,
