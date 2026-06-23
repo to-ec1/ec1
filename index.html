@@ -394,12 +394,13 @@
         // --- デフォルトスプレッドシート共有URL (ご提示のスプシID) ---
         const defaultSpreadsheetUrl = 'https://docs.google.com/spreadsheets/d/1xXFBM8tuBfxLDgDDD9pAmlG9-Uq63aLM-qTci_Gagi4/edit?usp=sharing&sheet=%E5%95%86%E5%93%81';
         const defaultEmail = 'takeonec1@gmail.com';
-        const defaultGasUrl = localStorage.getItem('takeon_gas_url') || '';
+        // 【修正】ご提示いただいたGASのデプロイURLを初期値として直接登録
+        const defaultGasUrl = 'https://script.google.com/macros/s/AKfycbymBVVweV3-Peox6wVPLvyEq8bNGkh2i1Obwmgg4K5e8SsVKhcy9lxHoC8ttHMODh8k/exec';
 
         // --- 状態管理 ---
         const spreadsheetUrl = ref(localStorage.getItem('bruna_spreadsheet_url') || defaultSpreadsheetUrl);
         const emailDestination = ref(localStorage.getItem('bruna_email_destination') || defaultEmail);
-        const gasUrl = ref(defaultGasUrl);
+        const gasUrl = ref(localStorage.getItem('takeon_gas_url') || defaultGasUrl);
         
         const tempSpreadsheetUrl = ref(spreadsheetUrl.value);
         const tempEmailDestination = ref(emailDestination.value);
@@ -723,7 +724,6 @@
 
             const overview = String(getValueByKeys(['商品概要', '概要', 'overview'])).trim();
 
-            // スプレッドシート上の絶対的な行番号 (iは0始まり、Google Vis APIのrows配列、実スプシの行は i + 2)
             const absoluteRowIndex = i + 2;
 
             result.push({
@@ -740,7 +740,7 @@
               images,
               current_image_index: 0,
               overview,
-              rowIndex: absoluteRowIndex // 在庫減算用のスプシ物理行インデックスを登録
+              rowIndex: absoluteRowIndex
             });
           }
           return result;
@@ -797,11 +797,11 @@
           if (confirm('接続設定を最初の状態（ takeonec1@gmail.com 宛て、ご指定のスプシ ）にリセットしますか？')) {
             spreadsheetUrl.value = defaultSpreadsheetUrl;
             emailDestination.value = defaultEmail;
-            gasUrl.value = '';
+            gasUrl.value = defaultGasUrl;
             
             tempSpreadsheetUrl.value = defaultSpreadsheetUrl;
             tempEmailDestination.value = defaultEmail;
-            tempGasUrl.value = '';
+            tempGasUrl.value = defaultGasUrl;
             
             localStorage.removeItem('bruna_spreadsheet_url');
             localStorage.removeItem('bruna_email_destination');
