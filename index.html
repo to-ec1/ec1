@@ -3,12 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- スマホがJANコードを電話番号と誤認して勝手に下線を引いたり発信しようとするのを完全に防ぎます -->
   <meta name="format-detection" content="telephone=no">
   <title>テイクオン</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Fonts: Zen Maru Gothic (温かみのある丸ゴシック) -->
+  <!-- Google Fonts: Zen Maru Gothic -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
@@ -20,31 +19,31 @@
   <style>
     body {
       font-family: 'Zen Maru Gothic', sans-serif;
-      background-color: #FAF6EE; /* 温かみのあるオフホワイト */
+      background-color: #FAF6EE;
     }
-    /* ディック・ブルーナ風の太い線の表現 */
-    .bruna-border {
-      border: 4px solid #3B2216; /* 深いブラウンの輪郭線 */
+    
+    /* キャラクター世界観に合わせた枠線およびシャドウ定義 */
+    .teffy-border {
+      border: 4px solid #3B2216;
     }
-    .bruna-border-t {
+    .teffy-border-t {
       border-top: 4px solid #3B2216;
     }
-    .bruna-border-b {
+    .teffy-border-b {
       border-bottom: 4px solid #3B2216;
     }
-    /* 絵本風の立体感（ネオ・ブルータリズム風 of フラットシャドウ） */
-    .bruna-shadow {
+    .teffy-shadow {
       box-shadow: 6px 6px 0px 0px #3B2216;
     }
-    .bruna-shadow-sm {
+    .teffy-shadow-sm {
       box-shadow: 4px 4px 0px 0px #3B2216;
     }
-    .bruna-shadow-active:active {
+    .teffy-shadow-active:active {
       transform: translate(2px, 2px);
       box-shadow: 2px 2px 0px 0px #3B2216;
     }
 
-    /* 体・足の出現アニメーション */
+    /* キャラクターアニメーション */
     .character-body {
       opacity: 0;
       transform: scaleY(0);
@@ -56,7 +55,6 @@
       transform: scaleY(1);
     }
 
-    /* トコトコ左右に揺れて歩く歩行アニメーション */
     @keyframes walk-wobble {
       0% { transform: rotate(0deg) translateY(0); }
       25% { transform: rotate(-5deg) translateY(-2.5px); }
@@ -74,26 +72,26 @@
 
   <div id="app" class="min-h-screen flex flex-col pb-24">
     
-    <!-- ヘッダー（アニメーションキャラクター内蔵） -->
-    <header class="bg-[#FFCD00] bruna-border-b py-4 px-4 text-center shadow-sm relative overflow-hidden">
+    <!-- ヘッダー -->
+    <header class="bg-[#FFCD00] teffy-border-b py-4 px-4 text-center shadow-sm relative overflow-hidden">
       <div class="max-w-4xl mx-auto flex flex-col items-center relative">
         
         <!-- キャラクター歩行エリア -->
         <div class="flex items-center justify-center h-28 relative w-full max-w-xs md:max-w-md">
           
-          <!-- キャラクターコンテナ（マウント1.5秒後から左へ3秒かけてスムーズ移動） -->
+          <!-- キャラクターコンテナ -->
           <div class="absolute cursor-pointer flex flex-col items-center transition-all duration-[3000ms] ease-in-out z-10"
                :style="{ transform: 'translateX(' + charPositionX + 'px)' }"
                @click="openAIChat">
             
-            <!-- ピョコッと浮き出るAI吹き出し案内 -->
+            <!-- 吹き出し案内 -->
             <transition enter-active-class="transition ease-out duration-300" enter-from-class="opacity-0 scale-75 -translate-y-2" enter-to-class="opacity-100 scale-100 translate-y-0">
-              <div v-if="showAiBubble" class="absolute -top-12 bg-white text-xs font-black px-3 py-1.5 bruna-border rounded-xl bruna-shadow-sm whitespace-nowrap animate-bounce text-[#0051A2]">
+              <div v-if="showAiBubble" class="absolute -top-12 bg-white text-xs font-black px-3 py-1.5 teffy-border rounded-xl teffy-shadow-sm whitespace-nowrap animate-bounce text-[#0051A2]">
                 AI相談はこちら！💡
               </div>
             </transition>
 
-            <!-- SVG全身キャラクター（1秒後に体が生えてきます） -->
+            <!-- SVG全身キャラクター (テッフィー) -->
             <svg class="w-16 h-16 inline-block" :class="{ 'walking-animation': isWalking }" viewBox="0 0 100 110" fill="none" xmlns="http://www.w3.org/2000/svg">
               <!-- 体と足 -->
               <g id="body-parts" class="character-body" :class="{ 'active': hasBody }">
@@ -101,7 +99,7 @@
                 <path d="M38 100V105C38 107 46 107 46 105V100" stroke="#3B2216" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="#FFFFFF"/>
                 <path d="M54 100V105C54 107 62 107 62 105V100" stroke="#3B2216" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="#FFFFFF"/>
               </g>
-              <!-- 頭部と耳（耳の塗りつぶし fill を完全に真っ白 #FFFFFF に固定しました） -->
+              <!-- 頭部と耳 -->
               <g id="head">
                 <path d="M35 15C35 7 43 7 43 15V45H35V15Z" fill="#FFFFFF" stroke="#3B2216" stroke-width="8" stroke-linejoin="round"/>
                 <path d="M57 15C57 7 65 7 65 15V45H57V15Z" fill="#FFFFFF" stroke="#3B2216" stroke-width="8" stroke-linejoin="round"/>
@@ -113,9 +111,9 @@
             </svg>
           </div>
 
-          <!-- メインタイトルロゴ（左側のうさぎスペースを確保して配置崩れを防止） -->
+          <!-- メインタイトルロゴ -->
           <h1 class="text-2xl md:text-3xl font-black tracking-wider flex items-center justify-center gap-2 relative">
-            <div class="w-16 h-16 flex-shrink-0"></div> <!-- うさぎが重なるためのダミースペース -->
+            <div class="w-16 h-16 flex-shrink-0"></div> <!-- キャラクター配置スペース -->
             <span>テイクオンB面</span>
           </h1>
           
@@ -127,21 +125,21 @@
     <!-- メインコンテンツ -->
     <main class="flex-grow max-w-4xl w-full mx-auto px-4 py-8">
       
-      <!-- ローディング表示（文字を完全に削除し、スピナーアニメーションのみに統合しました） -->
+      <!-- ローディング表示 -->
       <div v-if="isLoading" class="text-center py-20">
         <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-[#3B2216] border-t-[#FFCD00]"></div>
       </div>
 
       <!-- エラー表示 -->
-      <div v-else-if="error" class="bg-[#E32915] text-white bruna-border rounded-2xl p-6 mb-8 bruna-shadow">
+      <div v-else-if="error" class="bg-[#E32915] text-white teffy-border rounded-2xl p-6 mb-8 teffy-shadow">
         <h3 class="font-black text-lg mb-2 flex items-center gap-2">
           <i data-lucide="alert-triangle" class="w-6 h-6"></i>
           データの読み込みに失敗しました
         </h3>
         <p class="text-sm opacity-95 mb-4">{{ error }}</p>
-        <p class="text-xs opacity-90 mb-4">※GAS統合API of デプロイURLが正しく設定されているか、またはGoogleスプレッドシートのIDが正しいかご確認ください。</p>
+        <p class="text-xs opacity-90 mb-4">※接続先設定またはGoogleスプレッドシートのIDをご確認ください。</p>
         <div class="flex gap-2">
-          <button @click="loadProductsFromGas" class="bg-white text-[#E32915] px-4 py-2 rounded-lg font-bold bruna-border bruna-shadow-sm bruna-shadow-active text-sm">
+          <button @click="loadProductsFromGas" class="bg-white text-[#E32915] px-4 py-2 rounded-lg font-bold teffy-border teffy-shadow-sm teffy-shadow-active text-sm">
             もう一度試す
           </button>
         </div>
@@ -150,11 +148,11 @@
       <!-- 商品リスト -->
       <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div v-for="(product, index) in products" :key="index" 
-             class="bg-white bruna-border rounded-2xl overflow-hidden bruna-shadow flex flex-col justify-between transition-all duration-200"
+             class="bg-white teffy-border rounded-2xl overflow-hidden teffy-shadow flex flex-col justify-between transition-all duration-200"
              :class="[getCardBgClass(index), product.stock === 0 ? 'opacity-70' : '']">
           
-          <!-- 商品画像エリア（スワイプ・ドラッグ切り替え対応） -->
-          <div class="relative bg-white bruna-border-b h-72 flex items-center justify-center overflow-hidden select-none cursor-grab active:cursor-grabbing"
+          <!-- 商品画像エリア -->
+          <div class="relative bg-white teffy-border-b h-72 flex items-center justify-center overflow-hidden select-none cursor-grab active:cursor-grabbing"
                @touchstart="onTouchStart($event, product)"
                @touchend="onTouchEnd($event, product)"
                @mousedown="onMouseDown($event, product)"
@@ -168,7 +166,7 @@
                  referrerpolicy="no-referrer"
                  @error="onImageError(product, product.current_image_index)">
             
-            <!-- 代替のキャラクター風アイコン（画像がない場合） -->
+            <!-- 代替グラフィック -->
             <div v-else class="w-full h-full flex items-center justify-center pointer-events-none" :class="getIllustrationBg(index)">
               <svg class="w-32 h-32 opacity-90" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <g v-if="index % 4 === 0">
@@ -196,7 +194,7 @@
               </svg>
             </div>
 
-            <!-- 画像カルーセルインジケーター -->
+            <!-- 画像ナビゲーションボタン -->
             <button v-if="product.images && product.images.length > 1" 
                     @click.stop="prevImage(product)" 
                     class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/10 hover:bg-black/25 text-white active:scale-95 transition-colors rounded-full w-9 h-9 flex items-center justify-center text-xs font-black pointer-events-auto shadow-sm"
@@ -210,32 +208,32 @@
               ▶
             </button>
             
-            <!-- 価格タグ (税抜売価を表示) -->
-            <div class="absolute top-4 right-4 bg-[#E32915] text-white px-3 py-2 font-black text-lg bruna-border rounded-xl bruna-shadow-sm pointer-events-none">
+            <!-- 価格タグ -->
+            <div class="absolute top-4 right-4 bg-[#E32915] text-white px-3 py-2 font-black text-lg teffy-border rounded-xl teffy-shadow-sm pointer-events-none">
               <div class="text-xs opacity-90 text-center font-bold">価格 (税抜)</div>
               ¥{{ formatPrice(product.price) }}
             </div>
 
-            <!-- 売り切れバッジ -->
+            <!-- 売り切れ表示 -->
             <div v-if="product.stock === 0" class="absolute inset-0 bg-black/40 flex items-center justify-center pointer-events-none">
-              <span class="bg-[#E32915] text-white px-6 py-3 font-black text-2xl bruna-border rounded-xl bruna-shadow rotate-[-6deg]">
+              <span class="bg-[#E32915] text-white px-6 py-3 font-black text-2xl teffy-border rounded-xl teffy-shadow rotate-[-6deg]">
                 SOLD OUT
               </span>
             </div>
           </div>
 
-          <!-- 商品説明＆コード・在庫状況 -->
+          <!-- 商品説明＆管理コード -->
           <div class="p-5 flex-grow flex flex-col justify-between bg-white">
             <div>
               <!-- 商品名 -->
               <h2 class="text-xl font-black tracking-wide leading-snug">{{ product.title }}</h2>
               
-              <!-- M列：商品概要 -->
+              <!-- 概要 -->
               <p v-if="product.overview" class="text-sm font-bold text-gray-500 mt-1 mb-4 leading-relaxed whitespace-pre-wrap">
                 {{ product.overview }}
               </p>
 
-              <!-- 現在庫数とJANコード -->
+              <!-- 在庫・JAN情報 -->
               <div class="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-black text-gray-700">
                 <span>
                   在庫数: <span :class="product.stock <= 5 ? 'text-[#E32915]' : ''">{{ product.stock }}個</span>
@@ -251,12 +249,12 @@
               <span class="font-bold text-sm">数量選択</span>
               <div class="flex items-center gap-3">
                 <!-- マイナスボタン -->
-                <button @click="decrement(index)" :disabled="product.stock === 0" class="w-10 h-10 bg-white bruna-border rounded-lg flex items-center justify-center font-black text-xl bruna-shadow-sm bruna-shadow-active hover:bg-gray-100 transition-colors disabled:opacity-50">
+                <button @click="decrement(index)" :disabled="product.stock === 0" class="w-10 h-10 bg-white teffy-border rounded-lg flex items-center justify-center font-black text-xl teffy-shadow-sm teffy-shadow-active hover:bg-gray-100 transition-colors disabled:opacity-50">
                   -
                 </button>
                 <span class="w-8 text-center font-black text-xl">{{ getQuantity(index) }}</span>
                 <!-- プラスボタン -->
-                <button @click="increment(index)" :disabled="product.stock === 0 || getQuantity(index) >= product.stock" class="w-10 h-10 bg-[#FFCD00] bruna-border rounded-lg flex items-center justify-center font-black text-xl bruna-shadow-sm bruna-shadow-active hover:bg-[#E2B500] transition-colors disabled:opacity-50">
+                <button @click="increment(index)" :disabled="product.stock === 0 || getQuantity(index) >= product.stock" class="w-10 h-10 bg-[#FFCD00] teffy-border rounded-lg flex items-center justify-center font-black text-xl teffy-shadow-sm teffy-shadow-active hover:bg-[#E2B500] transition-colors disabled:opacity-50">
                   +
                 </button>
               </div>
@@ -270,10 +268,10 @@
 
     <!-- 下部カートバー -->
     <transition enter-active-class="transition ease-out duration-300" enter-from-class="transform translate-y-full" enter-to-class="transform translate-y-0" leave-active-class="transition ease-in duration-200" leave-from-class="transform translate-y-0" leave-to-class="transform translate-y-full">
-      <div v-if="totalItems > 0" class="fixed bottom-0 left-0 right-0 bg-white bruna-border-t p-4 z-20 shadow-lg">
+      <div v-if="totalItems > 0" class="fixed bottom-0 left-0 right-0 bg-white teffy-border-t p-4 z-20 shadow-lg">
         <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div class="text-center sm:text-left">
-            <span class="bg-[#0051A2] text-white px-2 py-1 text-xs font-bold rounded bruna-border bruna-shadow-sm mr-2">
+            <span class="bg-[#0051A2] text-white px-2 py-1 text-xs font-bold rounded teffy-border teffy-shadow-sm mr-2">
               仮注文予定
             </span>
             <span class="font-black text-lg text-[#3B2216]">{{ totalItems }}点 のアイテム</span>
@@ -281,7 +279,7 @@
             <span class="font-black text-xl text-[#E32915]">合計 ¥{{ formatPrice(totalPrice) }} (税抜)</span>
           </div>
           
-          <button @click="openOrderModal" class="w-full sm:w-auto bg-[#E32915] text-white px-8 py-3 rounded-xl font-black text-lg bruna-border bruna-shadow bruna-shadow-active hover:bg-[#C51F0D] flex items-center justify-center gap-2 transition-colors">
+          <button @click="openOrderModal" class="w-full sm:w-auto bg-[#E32915] text-white px-8 py-3 rounded-xl font-black text-lg teffy-border teffy-shadow teffy-shadow-active hover:bg-[#C51F0D] flex items-center justify-center gap-2 transition-colors">
             <i data-lucide="shopping-bag" class="w-5 h-5"></i>
             仮注文手続きに進む
           </button>
@@ -292,7 +290,7 @@
     <!-- 仮注文内容確認モーダル -->
     <transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition ease-in duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
       <div v-if="isOrderModalOpen" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 flex items-center justify-center p-4">
-        <div class="bg-white bruna-border rounded-2xl w-full max-w-md p-6 bruna-shadow max-h-[90vh] overflow-y-auto">
+        <div class="bg-white teffy-border rounded-2xl w-full max-w-md p-6 teffy-shadow max-h-[90vh] overflow-y-auto">
           
           <div class="flex justify-between items-center mb-4">
             <h3 class="font-black text-xl flex items-center gap-2">
@@ -304,13 +302,13 @@
             </button>
           </div>
 
-          <!-- スーパーデリバリー用仮注文 警告表示 -->
-          <div class="bg-[#FFCD00]/25 bruna-border rounded-xl p-4 mb-4 text-xs font-bold leading-relaxed text-[#3B2216]">
+          <!-- 注意書き表示 -->
+          <div class="bg-[#FFCD00]/25 teffy-border rounded-xl p-4 mb-4 text-xs font-bold leading-relaxed text-[#3B2216]">
             ⚠️ <span class="text-[#E32915]">※在庫確認の上、スーパーデリバリーのメッセージより発注書を送信いたします。</span>
           </div>
 
           <!-- 注文商品リスト -->
-          <div class="space-y-3 mb-6 bg-[#FAF6EE] p-3 rounded-xl bruna-border">
+          <div class="space-y-3 mb-6 bg-[#FAF6EE] p-3 rounded-xl teffy-border">
             <div v-for="item in cartItems" :key="item.index" class="text-xs font-bold space-y-1 py-1.5 border-b border-dashed border-[#3B2216]/10 last:border-0">
               <div class="flex justify-between items-center text-sm">
                 <span class="font-black text-[#3B2216]">{{ item.title }}</span>
@@ -335,21 +333,21 @@
           <div class="space-y-4 mb-6">
             <div>
               <label class="block text-xs font-bold mb-1 text-[#3B2216]">お名前（必須）</label>
-              <input type="text" v-model="customerInfo.name" placeholder="山田 太郎" class="w-full px-3 py-2 bruna-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0051A2] font-bold">
+              <input type="text" v-model="customerInfo.name" placeholder="山田 太郎" class="w-full px-3 py-2 teffy-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0051A2] font-bold">
             </div>
             <div>
               <label class="block text-xs font-bold mb-1 text-[#3B2216]">ご連絡先（電話 / メール等）（必須）</label>
-              <input type="text" v-model="customerInfo.contact" placeholder="090-0000-0000 / sample@mail.com" class="w-full px-3 py-2 bruna-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0051A2] font-bold">
+              <input type="text" v-model="customerInfo.contact" placeholder="090-0000-0000 / sample@mail.com" class="w-full px-3 py-2 teffy-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0051A2] font-bold">
             </div>
             <div>
               <label class="block text-xs font-bold mb-1 text-[#3B2216]">その他・ご要望・備考（任意）</label>
-              <textarea v-model="customerInfo.memo" placeholder="ご質問や指定事項がございましたらご記入ください" rows="2" class="w-full px-3 py-2 bruna-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0051A2] font-bold"></textarea>
+              <textarea v-model="customerInfo.memo" placeholder="ご質問や指定事項がございましたらご記入ください" rows="2" class="w-full px-3 py-2 teffy-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0051A2] font-bold"></textarea>
             </div>
           </div>
 
-          <!-- 仮注文送信確定ボタン -->
+          <!-- 注文確定ボタン -->
           <div class="space-y-3 border-t border-[#3B2216]/10 pt-4">
-            <button @click="submitPreOrder" :disabled="isSending" class="w-full bg-[#008940] text-white py-3.5 rounded-xl font-bold text-sm bruna-border bruna-shadow-sm bruna-shadow-active hover:bg-[#007034] flex items-center justify-center gap-2 transition-colors disabled:opacity-50">
+            <button @click="submitPreOrder" :disabled="isSending" class="w-full bg-[#008940] text-white py-3.5 rounded-xl font-bold text-sm teffy-border teffy-shadow-sm teffy-shadow-active hover:bg-[#007034] flex items-center justify-center gap-2 transition-colors disabled:opacity-50">
               <i data-lucide="check-circle" class="w-5 h-5"></i>
               <span>{{ isSending ? '仮注文データを送信中...' : 'この内容で仮注文を確定する' }}</span>
             </button>
@@ -362,7 +360,7 @@
     <!-- AIお悩み相談モーダル -->
     <transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition ease-in duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
       <div v-if="isAiChatOpen" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 flex items-center justify-center p-4">
-        <div class="bg-white bruna-border rounded-2xl w-full max-w-md p-6 bruna-shadow max-h-[90vh] overflow-y-auto flex flex-col">
+        <div class="bg-white teffy-border rounded-2xl w-full max-w-md p-6 teffy-shadow max-h-[90vh] overflow-y-auto flex flex-col">
           
           <!-- モーダルヘッダー -->
           <div class="flex justify-between items-center mb-4">
@@ -376,38 +374,35 @@
           </div>
 
           <!-- チャットログ表示エリア -->
-          <div class="flex-grow overflow-y-auto bg-[#FAF6EE] bruna-border rounded-xl p-4 mb-4 min-h-[250px] max-h-[400px] flex flex-col space-y-4">
+          <div class="flex-grow overflow-y-auto bg-[#FAF6EE] teffy-border rounded-xl p-4 mb-4 min-h-[250px] max-h-[400px] flex flex-col space-y-4">
             
-            <!-- AIの最初のご挨拶 -->
+            <!-- AI初期メッセージ (テッフィー固有の優しいお出迎えご挨拶) -->
             <div class="flex items-start gap-2.5">
-              <div class="w-8 h-8 rounded-full bg-[#FFCD00] flex items-center justify-center bruna-border flex-shrink-0 text-xs">🐰</div>
-              <div class="bg-white bruna-border rounded-2xl px-3 py-2 text-sm font-bold shadow-sm max-w-[80%] whitespace-pre-wrap">
-                こんにちは！テイクオンB面の仮注文コンシェルジュだよ。
-                商品について知りたいことや、今日のおすすめ、予算に合わせた相談など、何でも気軽に聞いてね！
-              </div>
+              <div class="w-8 h-8 rounded-full bg-[#FFCD00] flex items-center justify-center teffy-border flex-shrink-0 text-xs">🐰</div>
+              <div class="bg-white teffy-border rounded-2xl px-3 py-2 text-sm font-bold shadow-sm max-w-[80%] whitespace-pre-wrap">こんにちは、テッフィーだよ。何でも気軽に聞いてね！</div>
             </div>
 
-            <!-- チャットのやり取りの履歴 -->
+            <!-- チャット履歴 -->
             <div v-for="(chat, i) in chatHistory" :key="i" class="space-y-4 w-full">
-              <!-- ユーザー発言 -->
+              <!-- ユーザー -->
               <div class="flex justify-end w-full">
-                <div class="bg-[#0051A2] text-white bruna-border rounded-2xl px-3 py-2 text-sm font-bold max-w-[80%] whitespace-pre-wrap">
+                <div class="bg-[#0051A2] text-white teffy-border rounded-2xl px-3 py-2 text-sm font-bold max-w-[80%] whitespace-pre-wrap">
                   {{ chat.query }}
                 </div>
               </div>
-              <!-- AI応答 -->
+              <!-- AI -->
               <div class="flex items-start gap-2.5 w-full">
-                <div class="w-8 h-8 rounded-full bg-[#FFCD00] flex items-center justify-center bruna-border flex-shrink-0 text-xs">🐰</div>
-                <div class="bg-white bruna-border rounded-2xl px-3 py-2 text-sm font-bold shadow-sm max-w-[80%] whitespace-pre-wrap">
+                <div class="w-8 h-8 rounded-full bg-[#FFCD00] flex items-center justify-center teffy-border flex-shrink-0 text-xs">🐰</div>
+                <div class="bg-white teffy-border rounded-2xl px-3 py-2 text-sm font-bold shadow-sm max-w-[80%] whitespace-pre-wrap">
                   {{ chat.response }}
                 </div>
               </div>
             </div>
 
-            <!-- AIローディング表示 -->
+            <!-- AIロード中表示 -->
             <div v-if="isAiLoading" class="flex items-start gap-2.5">
-              <div class="w-8 h-8 rounded-full bg-[#FFCD00] flex items-center justify-center bruna-border flex-shrink-0 text-xs animate-bounce">🐰</div>
-              <div class="bg-white bruna-border rounded-2xl px-3 py-2 text-sm font-bold shadow-sm flex items-center gap-1">
+              <div class="w-8 h-8 rounded-full bg-[#FFCD00] flex items-center justify-center teffy-border flex-shrink-0 text-xs animate-bounce">🐰</div>
+              <div class="bg-white teffy-border rounded-2xl px-3 py-2 text-sm font-bold shadow-sm flex items-center gap-1">
                 考え中
                 <span class="animate-pulse">.</span>
                 <span class="animate-pulse delay-100">.</span>
@@ -417,26 +412,26 @@
 
           </div>
 
-          <!-- クイックお悩み相談質問集 -->
+          <!-- クイック相談候補 -->
           <div class="mb-4">
             <div class="text-xs font-black text-gray-500 mb-1.5">💡 タップしてクイック相談</div>
             <div class="flex flex-wrap gap-1.5">
-              <button @click="quickAsk('今の一番おすすめの商品は？')" class="bg-white hover:bg-gray-100 text-xs font-bold px-2.5 py-1 rounded-lg bruna-border bruna-shadow-sm bruna-shadow-active">
+              <button @click="quickAsk('今の一番おすすめの商品は？')" class="bg-white hover:bg-gray-100 text-xs font-bold px-2.5 py-1 rounded-lg teffy-border teffy-shadow-sm teffy-shadow-active">
                 今日のおすすめは？✨
               </button>
-              <button @click="quickAsk('予算5000円以内でおすすめの商品を教えて')" class="bg-white hover:bg-gray-100 text-xs font-bold px-2.5 py-1 rounded-lg bruna-border bruna-shadow-sm bruna-shadow-active">
+              <button @click="quickAsk('予算5000円以内でおすすめの商品を教えて')" class="bg-white hover:bg-gray-100 text-xs font-bold px-2.5 py-1 rounded-lg teffy-border teffy-shadow-sm teffy-shadow-active">
                 予算5,000円のお勧めは？💰
               </button>
-              <button @click="quickAsk('人気商品の特徴を詳しく教えてください')" class="bg-white hover:bg-gray-100 text-xs font-bold px-2.5 py-1 rounded-lg bruna-border bruna-shadow-sm bruna-shadow-active">
+              <button @click="quickAsk('人気商品の特徴を詳しく教えてください')" class="bg-white hover:bg-gray-100 text-xs font-bold px-2.5 py-1 rounded-lg teffy-border teffy-shadow-sm teffy-shadow-active">
                 人気商品の魅力を教えて！🌟
               </button>
             </div>
           </div>
 
-          <!-- 入力送信フォーム -->
+          <!-- メッセージ入力フォーム -->
           <div class="flex gap-2">
-            <input type="text" v-model="aiQuery" @keyup.enter="askGeminiAI" placeholder="AIにおすすめを聞いてみる..." class="flex-grow px-3 py-2.5 bruna-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0051A2] font-bold">
-            <button @click="askGeminiAI" :disabled="isAiLoading || !aiQuery.trim()" class="bg-[#0051A2] text-white px-4 py-2.5 rounded-xl font-bold text-sm bruna-border bruna-shadow-sm bruna-shadow-active hover:bg-[#003D7A] transition-colors disabled:opacity-50 flex items-center justify-center">
+            <input type="text" v-model="aiQuery" @keyup.enter="askGeminiAI" placeholder="AIにおすすめを聞いてみる..." class="flex-grow px-3 py-2.5 teffy-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0051A2] font-bold">
+            <button @click="askGeminiAI" :disabled="isAiLoading || !aiQuery.trim()" class="bg-[#0051A2] text-white px-4 py-2.5 rounded-xl font-bold text-sm teffy-border teffy-shadow-sm teffy-shadow-active hover:bg-[#003D7A] transition-colors disabled:opacity-50 flex items-center justify-center">
               <i data-lucide="send" class="w-4 h-4"></i>
             </button>
           </div>
@@ -446,7 +441,7 @@
     </transition>
 
     <!-- フッター -->
-    <footer class="bg-[#5D3725] text-white bruna-border-t py-6 px-4 text-center mt-auto">
+    <footer class="bg-[#5D3725] text-white teffy-border-t py-6 px-4 text-center mt-auto">
       <div class="max-w-4xl mx-auto text-sm font-bold opacity-90">
         <p>© テイクオン. All rights reserved.</p>
       </div>
@@ -460,7 +455,7 @@
     createApp({
       setup() {
         // ================================================================
-        // 🔒 セキュリティ対策済みの通信URL設定
+        // ⚙️ API接続設定
         // ================================================================
         const gasApiUrl = "%%GAS_API_URL%%"; 
 
@@ -479,22 +474,22 @@
           memo: ''
         });
 
-        // キャラクターアニメーション用のリアクティブ状態
+        // キャラクターアニメーション状態
         const hasBody = ref(false);
         const isWalking = ref(false);
-        const charPositionX = ref(120); // 初期右ポジション
+        const charPositionX = ref(120);
         const showAiBubble = ref(false);
 
-        // AIチャット用状態
+        // AIチャット状態
         const isAiChatOpen = ref(false);
         const aiQuery = ref('');
         const chatHistory = ref([]);
         const isAiLoading = ref(false);
 
-        // スワイプおよびドラッグ操作による画像切り替え追跡変数
+        // スワイプ・ドラッグ操作追跡用
         const dragStartX = ref(0);
 
-        // デモ商品データ (通信エラー時などの安全なフォールバック用)
+        // デモ商品データ (通信エラー時などのフォールバック用)
         const demoProducts = [
           {
             title: "デモ商品A: テイクオン・おうちのクッション",
@@ -547,12 +542,12 @@
             }
           });
 
-          // キャラクターアニメーションの起動フロー
+          // アニメーション開始トリガー
           setTimeout(() => {
             hasBody.value = true;
             setTimeout(() => {
               isWalking.value = true;
-              charPositionX.value = -90; // タイトルの左側の定位置へ
+              charPositionX.value = -90;
               
               setTimeout(() => {
                 isWalking.value = false;
@@ -565,7 +560,7 @@
         // --- メソッド ---
 
         /**
-         * セキュアなデータ取得
+         * 商品データの読み込み
          */
         const loadProductsFromGas = async () => {
           if (!gasApiUrl || gasApiUrl.startsWith("%%")) {
@@ -579,7 +574,6 @@
           error.value = null;
 
           try {
-            // CORSプリフライトを完全に回避する安全なPOST型text/plain送信
             const response = await fetch(gasApiUrl, {
               method: "POST",
               headers: { "Content-Type": "text/plain" },
@@ -602,7 +596,6 @@
           } catch (err) {
             console.error("データ同期エラー:", err);
             error.value = err.message || "GAS統合APIとの通信に失敗しました。";
-            // エラー時はデモデータを展開
             products.value = [...demoProducts];
             resetCart();
           } finally {
@@ -743,7 +736,7 @@
         };
 
         /**
-         * 在庫自動減算・仮注文シート記録・自動管理者メール配信の統合トリガー
+         * 注文情報の送信
          */
         const submitPreOrder = async () => {
           if (!validateForm()) return;
@@ -791,20 +784,19 @@
             isOrderModalOpen.value = false;
             resetCart();
 
-            // スプシ側から在庫の最新状態を引き抜いて同期リロード
             setTimeout(() => {
               loadProductsFromGas();
             }, 1200);
 
           } catch (apiError) {
-            console.error("仮注文処理中にエラーが発生しました:", apiError);
-            alert('仮注文の処理中に一時的なネットワークエラーが発生しました。もう一度お試しください。');
+            console.error("仮注文送信エラー:", apiError);
+            alert('仮注文の処理中にネットワークエラーが発生しました。もう一度お試しください。');
           } finally {
             isSending.value = false;
           }
         };
 
-        // --- AI相談窓口（Geminiコール）機能関連 ---
+        // --- AI相談窓口 ---
         const openAIChat = () => {
           isAiChatOpen.value = true;
           nextTick(() => {
@@ -820,7 +812,7 @@
         };
 
         /**
-         * HTML側からAPIキーを完全に秘匿した安全なGemini AI呼び出し
+         * AIお悩み相談APIの送信
          */
         const askGeminiAI = async () => {
           if (isAiLoading.value || !aiQuery.value.trim()) return;
@@ -893,13 +885,11 @@
           onMouseUp,
           submitPreOrder,
           
-          // キャラクターアニメーションステート
           hasBody,
           isWalking,
           charPositionX,
           showAiBubble,
 
-          // AIチャットステート・メソッド
           isAiChatOpen,
           aiQuery,
           chatHistory,
