@@ -166,7 +166,7 @@
                @mousedown="onMouseDown($event, product)"
                @mouseup="onMouseUp($event, product)">
             
-            <!-- カルーセルメイン画像（スマートフォン対応属性を維持） -->
+            <!-- カルーセルメイン画像 -->
             <img v-if="product.images && product.images.length > 0 && product.images[product.current_image_index]" 
                  :src="product.images[product.current_image_index]" 
                  :alt="product.title" 
@@ -174,7 +174,7 @@
                  referrerpolicy="no-referrer"
                  @error="onImageError(product, product.current_image_index)">
             
-            <!-- 代替のキャラクター風アイコン（画像がない場合） -->
+            <!-- 代替のキャラクター風アイコン -->
             <div v-else class="w-full h-full flex items-center justify-center pointer-events-none" :class="getIllustrationBg(index)">
               <svg class="w-32 h-32 opacity-90" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <g v-if="index % 4 === 0">
@@ -202,7 +202,7 @@
               </svg>
             </div>
 
-            <!-- 画像カルーセルインジケーター（複数画像がある場合のみ表示、PC用のナビも維持） -->
+            <!-- 画像カルーセルインジケーター -->
             <div v-if="product.images && product.images.length > 1" class="absolute inset-x-4 bottom-3 flex justify-between items-center bg-[#FAF6EE] bruna-border px-3 py-1 rounded-xl bruna-shadow-sm text-xs font-bold pointer-events-auto">
               <button @click.stop="prevImage(product)" class="px-2 py-0.5 hover:bg-gray-200 rounded text-base active:scale-95 transition-transform" title="前の画像">◀</button>
               <span class="select-none">スワイプで変更 {{ product.current_image_index + 1 }} / {{ product.images.length }}</span>
@@ -229,8 +229,8 @@
               <!-- 商品名 -->
               <h2 class="text-xl font-black tracking-wide leading-snug">{{ product.title }}</h2>
               
-              <!-- M列：商品概要 -->
-              <p v-if="product.overview" class="text-sm font-bold text-gray-500 mt-1 mb-4 leading-relaxed">
+              <!-- M列：商品概要（【修正点】whitespace-pre-wrap クラスを追加して改行をそのまま再現） -->
+              <p v-if="product.overview" class="text-sm font-bold text-gray-500 mt-1 mb-4 leading-relaxed whitespace-pre-wrap">
                 {{ product.overview }}
               </p>
 
@@ -330,7 +330,7 @@
             </div>
           </div>
 
-          <!-- お客様情報入力フォーム（住所は完全に非表示に修正） -->
+          <!-- お客様情報入力フォーム -->
           <div class="space-y-4 mb-6">
             <div>
               <label class="block text-xs font-bold mb-1 text-[#3B2216]">お名前（必須）</label>
@@ -346,7 +346,7 @@
             </div>
           </div>
 
-          <!-- 仮注文送信確定ボタン (1タップでスプシ更新＋在庫減算＋裏で自動管理用メール送信) -->
+          <!-- 仮注文送信確定ボタン -->
           <div class="space-y-3 border-t border-[#3B2216]/10 pt-4">
             <button @click="submitPreOrder" :disabled="isSending" class="w-full bg-[#008940] text-white py-3.5 rounded-xl font-bold text-sm bruna-border bruna-shadow-sm bruna-shadow-active hover:bg-[#007034] flex items-center justify-center gap-2 transition-colors disabled:opacity-50">
               <i data-lucide="check-circle" class="w-5 h-5"></i>
@@ -762,7 +762,6 @@
           }
         };
 
-        // --- スマートフォンでのスワイプ切り替えロジックの追加 ---
         const onTouchStart = (e, product) => {
           dragStartX.value = e.touches[0].clientX;
         };
@@ -772,7 +771,6 @@
           handleSwipe(dragStartX.value, touchEndX, product);
         };
 
-        // --- PC環境でのドラッグ切り替えロジック ---
         const onMouseDown = (e, product) => {
           dragStartX.value = e.clientX;
         };
@@ -783,13 +781,13 @@
         };
 
         const handleSwipe = (start, end, product) => {
-          const swipeThreshold = 55; // 切り替え判定の最小ピクセル数
+          const swipeThreshold = 55;
           const diff = start - end;
           if (Math.abs(diff) > swipeThreshold) {
             if (diff > 0) {
-              nextImage(product); // 左にスワイプ -> 次の画像へ
+              nextImage(product);
             } else {
-              prevImage(product); // 右にスワイプ -> 前の画像へ
+              prevImage(product);
             }
           }
         };
@@ -938,7 +936,7 @@
             // 送信する注文内容と在庫更新用データをパッケージ化
             const orderPayload = {
               orderId: orderId,
-              adminEmail: emailDestination.value, // 管理用控えの送信先をペイロードに追加
+              adminEmail: emailDestination.value,
               customer: {
                 name: customerInfo.value.name.trim(),
                 contact: customerInfo.value.contact.trim(),
@@ -959,7 +957,7 @@
             // GAS APIにリクエストを送信
             await fetch(gasUrl.value, {
               method: 'POST',
-              mode: 'no-cors', // CORS問題をバイパス
+              mode: 'no-cors',
               headers: {
                 'Content-Type': 'application/json'
               },
