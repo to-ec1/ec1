@@ -866,7 +866,7 @@
 
           // 10秒経過したら強制中断（タイムアウト）
           const controller = new AbortController();
-          const hardTimeoutTimer = setTimeout(() => controller.abort(), 30000);
+          const hardTimeoutTimer = setTimeout(() => controller.abort(), 120000);
 
           try {
             if (!gasApiUrl || gasApiUrl.startsWith("%%")) {
