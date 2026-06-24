@@ -404,11 +404,11 @@
               </div>
             </div>
 
-            <!-- AIローディング表示 -->
+            <!-- AIローディング表示（3秒経過で「ただいまお調べ中...」に文言が切り替わります） -->
             <div v-if="isAiLoading" class="flex items-start gap-2.5">
               <div class="w-8 h-8 rounded-full bg-[#FFCD00] flex items-center justify-center bruna-border flex-shrink-0 text-xs animate-bounce">🐰</div>
               <div class="bg-white bruna-border rounded-2xl px-3 py-2 text-sm font-bold shadow-sm flex items-center gap-1">
-                考え中
+                {{ aiStatusText }}
                 <span class="animate-pulse">.</span>
                 <span class="animate-pulse delay-100">.</span>
                 <span class="animate-pulse delay-200">.</span>
@@ -434,11 +434,28 @@
           </div>
 
           <!-- 入力送信フォーム -->
-          <div class="flex gap-2">
+          <div class="flex gap-2 mb-3">
             <input type="text" v-model="aiQuery" @keyup.enter="askGeminiAI" placeholder="AIにおすすめを聞いてみる..." class="flex-grow px-3 py-2.5 bruna-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0051A2] font-bold">
             <button @click="askGeminiAI" :disabled="isAiLoading || !aiQuery.trim()" class="bg-[#0051A2] text-white px-4 py-2.5 rounded-xl font-bold text-sm bruna-border bruna-shadow-sm bruna-shadow-active hover:bg-[#003D7A] transition-colors disabled:opacity-50 flex items-center justify-center">
               <i data-lucide="send" class="w-4 h-4"></i>
             </button>
+          </div>
+
+          <!-- ご意見・ご要望フォーム（開閉式） -->
+          <div class="border-t border-dashed border-[#3B2216]/20 pt-3">
+            <button @click="isFeedbackOpen = !isFeedbackOpen" class="text-xs font-black text-[#0051A2] flex items-center gap-1">
+              <i data-lucide="message-square-plus" class="w-3.5 h-3.5"></i>
+              テッフィーへのご意見・ご要望はこちら
+            </button>
+
+            <div v-if="isFeedbackOpen" class="mt-2 space-y-2">
+              <input type="text" v-model="feedbackName" placeholder="お名前（任意）" class="w-full px-3 py-2 bruna-border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#0051A2] font-bold">
+              <textarea v-model="feedbackOpinion" placeholder="ご意見・ご要望をご記入ください" rows="2" class="w-full px-3 py-2 bruna-border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#0051A2] font-bold"></textarea>
+              <button @click="submitFeedback" :disabled="isFeedbackSending || !feedbackOpinion.trim()" class="w-full bg-[#FFCD00] text-[#3B2216] py-2 rounded-lg font-black text-xs bruna-border bruna-shadow-sm bruna-shadow-active hover:bg-[#E2B500] transition-colors disabled:opacity-50">
+                {{ isFeedbackSending ? '送信中...' : 'ご意見を送信する' }}
+              </button>
+              <p v-if="feedbackSentMessage" class="text-xs font-bold text-[#008940]">{{ feedbackSentMessage }}</p>
+            </div>
           </div>
 
         </div>
@@ -490,6 +507,14 @@
         const aiQuery = ref('');
         const chatHistory = ref([]);
         const isAiLoading = ref(false);
+        const aiStatusText = ref('考え中'); // 3秒経過で「ただいまお調べ中...」に変化
+
+        // ご意見フォーム用状態
+        const isFeedbackOpen = ref(false);
+        const feedbackName = ref('');
+        const feedbackOpinion = ref('');
+        const isFeedbackSending = ref(false);
+        const feedbackSentMessage = ref('');
 
         // スワイプおよびドラッグ操作による画像切り替え追跡変数
         const dragStartX = ref(0);
@@ -821,6 +846,10 @@
 
         /**
          * HTML側からAPIキーを完全に秘匿した安全なGemini AI呼び出し
+         * タイムアウト多層対応:
+         *   - 3秒経過: 表示文言を「ただいまお調べ中...」に切り替え（エラーではない）
+         *   - 10秒経過: AbortControllerで強制終了 → 「処理が重すぎて回答できなかった」旨を案内
+         *   - 10秒以内に発生したその他の通信失敗 → 「回線混雑」の旨を案内
          */
         const askGeminiAI = async () => {
           if (isAiLoading.value || !aiQuery.value.trim()) return;
@@ -828,6 +857,16 @@
           const query = aiQuery.value.trim();
           aiQuery.value = '';
           isAiLoading.value = true;
+          aiStatusText.value = '考え中';
+
+          // 3秒経過したら「お調べ中」表示に切り替え（処理は継続中）
+          const slowNoticeTimer = setTimeout(() => {
+            aiStatusText.value = 'ただいまお調べ中';
+          }, 3000);
+
+          // 10秒経過したら強制中断（タイムアウト）
+          const controller = new AbortController();
+          const hardTimeoutTimer = setTimeout(() => controller.abort(), 10000);
 
           try {
             if (!gasApiUrl || gasApiUrl.startsWith("%%")) {
@@ -840,7 +879,8 @@
               body: JSON.stringify({
                 action: "ask_gemini",
                 query: query
-              })
+              }),
+              signal: controller.signal
             });
 
             if (!response.ok) {
@@ -857,12 +897,66 @@
 
           } catch (err) {
             console.error("AI相談エラー:", err);
-            chatHistory.value.push({ 
-              query, 
-              response: err.message || "お返事の受信中にエラーが発生しました。少しお時間をおいてもう一度聞いてみてね。" 
-            });
+
+            let fallbackMessage;
+            if (err.name === 'AbortError') {
+              // 10秒待っても応答が返らなかった = AI処理が重すぎてタイムアウト
+              fallbackMessage = "ごめんね、今回はちょっと難しくて回答できなかったよ…次はがんばるね！";
+            } else {
+              // タイムアウト以外の通信失敗 = 接続自体のエラー（回線混雑等）
+              fallbackMessage = "申し訳ありません。回線混雑につき、ただいまうまく繋がらないようです。少し時間をおいてから、もう一度お試しください。";
+            }
+
+            chatHistory.value.push({ query, response: fallbackMessage });
           } finally {
+            clearTimeout(slowNoticeTimer);
+            clearTimeout(hardTimeoutTimer);
             isAiLoading.value = false;
+            aiStatusText.value = '考え中';
+          }
+        };
+
+        /**
+         * テッフィーへのご意見・ご要望を「意見」シートに送信
+         */
+        const submitFeedback = async () => {
+          if (!feedbackOpinion.value.trim()) return;
+
+          if (!gasApiUrl || gasApiUrl.startsWith("%%")) {
+            feedbackSentMessage.value = '送信エラー: GAS APIのURLが未設定です。';
+            return;
+          }
+
+          isFeedbackSending.value = true;
+          feedbackSentMessage.value = '';
+
+          try {
+            const response = await fetch(gasApiUrl, {
+              method: "POST",
+              headers: { "Content-Type": "text/plain" },
+              body: JSON.stringify({
+                action: "submit_feedback",
+                name: feedbackName.value.trim() || '匿名',
+                opinion: feedbackOpinion.value.trim()
+              })
+            });
+
+            const data = await response.json();
+
+            if (data.status === "success") {
+              feedbackSentMessage.value = 'ご意見ありがとうございます！';
+              feedbackName.value = '';
+              feedbackOpinion.value = '';
+              setTimeout(() => { isFeedbackOpen.value = false; feedbackSentMessage.value = ''; }, 2000);
+            } else {
+              throw new Error(data.message || '送信に失敗しました。');
+            }
+
+          } catch (err) {
+            console.error("ご意見送信エラー:", err);
+            feedbackSentMessage.value = '送信に失敗しました。もう一度お試しください。';
+          } finally {
+            isFeedbackSending.value = false;
           }
         };
 
@@ -904,9 +998,18 @@
           aiQuery,
           chatHistory,
           isAiLoading,
+          aiStatusText,
           openAIChat,
           quickAsk,
-          askGeminiAI
+          askGeminiAI,
+
+          // ご意見フォームステート・メソッド
+          isFeedbackOpen,
+          feedbackName,
+          feedbackOpinion,
+          isFeedbackSending,
+          feedbackSentMessage,
+          submitFeedback
         };
       }
     }).mount('#app');
