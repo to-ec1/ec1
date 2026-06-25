@@ -153,22 +153,28 @@
 
           <button @click="toggleCategory(catName)"
                   :style="getCategoryStyle(catName)"
-                  class="w-full flex items-center justify-between bruna-border rounded-2xl px-5 py-3 font-black text-lg bruna-shadow-sm bruna-shadow-active transition-all duration-150" style="min-height: 72px;">
-            <span class="flex-shrink-0">{{ catName || '未分類' }}</span>
+                  class="w-full flex items-center justify-between rounded-2xl px-5 py-3 font-black bruna-shadow-sm bruna-shadow-active transition-all duration-150"
+                  style="min-height: 80px; border: 2px solid #3B2216;">
+            <!-- カテゴリー名 -->
+            <span class="flex-shrink-0 text-2xl leading-tight">{{ catName || '未分類' }}</span>
             <!-- 先頭3商品のサムネイル -->
-            <span class="flex items-center gap-1.5 mx-3">
+            <span class="flex items-center gap-2 mx-3 flex-grow justify-center">
               <template v-for="({ product: p }, i) in group.slice(0, 3)" :key="i">
                 <img v-if="p.images && p.images.length > 0 && p.images[0]"
                      :src="p.images[0]"
                      referrerpolicy="no-referrer"
-                     class="w-10 h-10 object-cover rounded-lg bruna-border bg-white/50 flex-shrink-0"
+                     class="object-cover rounded-lg bg-white/50 flex-shrink-0"
+                     style="width: 64px; height: 64px; border: 1.5px solid #3B2216;"
                      @error="$event.target.style.display='none'">
-                <span v-else class="w-10 h-10 rounded-lg bruna-border bg-white/20 flex-shrink-0 flex items-center justify-center text-lg">🛍</span>
+                <span v-else class="rounded-lg bg-white/20 flex-shrink-0 flex items-center justify-center text-2xl"
+                      style="width: 64px; height: 64px; border: 1.5px solid #3B2216;">🛍</span>
               </template>
             </span>
-            <span class="flex items-center gap-3 flex-shrink-0">
-              <span class="text-sm font-bold opacity-60">{{ group.length }}点</span>
-              <span class="text-xl">{{ openCategories[catName] ? '▲' : '▼' }}</span>
+            <!-- 点数・矢印 -->
+            <span class="flex flex-col items-center flex-shrink-0 gap-0.5">
+              <span class="font-black leading-none" style="font-size: 2rem;">{{ group.length }}</span>
+              <span class="font-bold leading-none" style="font-size: 1rem;">点</span>
+              <span style="font-size: 1rem;">{{ openCategories[catName] ? '▲' : '▼' }}</span>
             </span>
           </button>
 
