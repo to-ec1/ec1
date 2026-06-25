@@ -149,13 +149,47 @@
 
 
       <div v-else>
+
+        <!-- カテゴリーブロックグリッド（閉じた状態） -->
+        <div class="grid grid-cols-3 gap-3 mb-8">
+          <div v-for="(group, catName) in groupedProducts" :key="'block-' + catName"
+               @click="toggleCategory(catName)"
+               class="cursor-pointer bruna-border rounded-2xl overflow-hidden bruna-shadow bruna-shadow-active transition-all duration-150 flex flex-col"
+               :style="getCategoryStyle(catName)">
+
+            <!-- カテゴリー代表画像 -->
+            <div class="relative w-full overflow-hidden bg-white/20" style="padding-top: 70%;">
+              <img v-if="getCategoryThumb(group)"
+                   :src="getCategoryThumb(group)"
+                   class="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                   referrerpolicy="no-referrer"
+                   @error="$event.target.style.display='none'">
+              <div v-else class="absolute inset-0 flex items-center justify-center opacity-40">
+                <svg viewBox="0 0 60 60" class="w-10 h-10" fill="none">
+                  <rect x="8" y="8" width="44" height="44" rx="6" fill="currentColor" opacity="0.4"/>
+                  <circle cx="22" cy="24" r="6" fill="currentColor" opacity="0.6"/>
+                  <path d="M8 42L22 28L34 40L42 32L52 44" stroke="currentColor" stroke-width="4" stroke-linejoin="round" fill="none"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- カテゴリー名・点数 -->
+            <div class="px-2 py-2 flex flex-col items-center text-center">
+              <span class="font-black text-sm leading-tight">{{ catName || '未分類' }}</span>
+              <span class="text-xs font-bold opacity-70 mt-0.5">{{ group.length }}点</span>
+              <span class="text-xs mt-1 opacity-80">{{ openCategories[catName] ? '▲ 閉じる' : '▼ 開く' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- カテゴリー別商品リスト -->
         <div v-for="(group, catName) in groupedProducts" :key="catName" class="mb-4">
 
           <button @click="toggleCategory(catName)"
                   :style="getCategoryStyle(catName)"
                   class="w-full flex items-center justify-between bruna-border rounded-2xl px-5 py-3 font-black text-lg bruna-shadow-sm bruna-shadow-active transition-all duration-150">
             <span>{{ catName || '未分類' }}</span>
-            <span class="text-sm font-bold text-[#3B2216]/60">{{ group.length }}点</span>
+            <span class="text-sm font-bold opacity-60">{{ group.length }}点</span>
             <span class="text-xl">{{ openCategories[catName] ? '▲' : '▼' }}</span>
           </button>
 
@@ -537,6 +571,15 @@
           { bg: '#3B2216', text: '#FFFFFF' },
         ];
 
+        const getCategoryThumb = (group) => {
+          for (const { product } of group) {
+            if (product.images && product.images.length > 0 && product.images[0]) {
+              return product.images[0];
+            }
+          }
+          return null;
+        };
+
         const getCategoryStyle = (catName) => {
           const keys = Object.keys(groupedProducts.value);
           const idx = keys.indexOf(catName) % CATEGORY_PALETTE.length;
@@ -656,7 +699,7 @@
               products.value = data.products;
               resetCart();
               const cats = {};
-              data.products.forEach(p => { cats[p.category || '未分類'] = true; });
+              data.products.forEach(p => { cats[p.category || '未分類'] = false; });
               openCategories.value = cats;
             } else {
               throw new Error(data.message || "スプレッドシートの商品データの展開に失敗しました。");
@@ -1015,6 +1058,7 @@
           groupedProducts,
           toggleCategory,
           getCategoryStyle,
+          getCategoryThumb,
 
 
           hasBody,
