@@ -97,7 +97,7 @@
             <svg class="w-16 h-16 inline-block" :class="{ 'walking-animation': isWalking }" viewBox="0 0 100 110" fill="none" xmlns="http://www.w3.org/2000/svg">
 
               <g id="body-parts" class="character-body" :class="{ 'active': hasBody }">
-                <path d="M35 75L20 100H80L65 75Z" fill="#0051A2" stroke="#3B2216" stroke-width="8" stroke-linejoin="round"/>
+                <path d="M35 75L20 100H80L65 75Z" fill="#008940" stroke="#3B2216" stroke-width="8" stroke-linejoin="round"/>
                 <path d="M38 100V105C38 107 46 107 46 105V100" stroke="#3B2216" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="#FFFFFF"/>
                 <path d="M54 100V105C54 107 62 107 62 105V100" stroke="#3B2216" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="#FFFFFF"/>
               </g>
@@ -152,7 +152,8 @@
         <div v-for="(group, catName) in groupedProducts" :key="catName" class="mb-4">
 
           <button @click="toggleCategory(catName)"
-                  class="w-full flex items-center justify-between bg-[#FFCD00] bruna-border rounded-2xl px-5 py-3 font-black text-lg bruna-shadow-sm bruna-shadow-active transition-all duration-150">
+                  :style="getCategoryStyle(catName)"
+                  class="w-full flex items-center justify-between bruna-border rounded-2xl px-5 py-3 font-black text-lg bruna-shadow-sm bruna-shadow-active transition-all duration-150">
             <span>{{ catName || '未分類' }}</span>
             <span class="text-sm font-bold text-[#3B2216]/60">{{ group.length }}点</span>
             <span class="text-xl">{{ openCategories[catName] ? '▲' : '▼' }}</span>
@@ -526,6 +527,26 @@
         const dragStartX = ref(0);
 
         const openCategories = ref({});
+
+        const CATEGORY_PALETTE = [
+          { bg: '#FFCD00', text: '#3B2216' },
+          { bg: '#0051A2', text: '#FFFFFF' },
+          { bg: '#E32915', text: '#FFFFFF' },
+          { bg: '#008940', text: '#FFFFFF' },
+          { bg: '#FFFFFF', text: '#3B2216' },
+          { bg: '#3B2216', text: '#FFFFFF' },
+        ];
+
+        const getCategoryStyle = (catName) => {
+          const keys = Object.keys(groupedProducts.value);
+          const idx = keys.indexOf(catName) % CATEGORY_PALETTE.length;
+          const c = CATEGORY_PALETTE[idx];
+          return {
+            backgroundColor: c.bg,
+            color: c.text,
+            borderColor: '#3B2216',
+          };
+        };
 
         const groupedProducts = computed(() => {
           const groups = {};
@@ -993,6 +1014,7 @@
           openCategories,
           groupedProducts,
           toggleCategory,
+          getCategoryStyle,
 
 
           hasBody,
