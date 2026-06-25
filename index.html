@@ -148,10 +148,20 @@
       </div>
 
 
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div v-for="(product, index) in products" :key="index"
-             class="bg-white bruna-border rounded-2xl overflow-hidden bruna-shadow flex flex-col justify-between transition-all duration-200"
-             :class="[getCardBgClass(index), product.stock === 0 ? 'opacity-70' : '']">
+      <div v-else>
+        <div v-for="(group, catName) in groupedProducts" :key="catName" class="mb-4">
+
+          <button @click="toggleCategory(catName)"
+                  class="w-full flex items-center justify-between bg-[#FFCD00] bruna-border rounded-2xl px-5 py-3 font-black text-lg bruna-shadow-sm bruna-shadow-active transition-all duration-150">
+            <span>{{ catName || '未分類' }}</span>
+            <span class="text-sm font-bold text-[#3B2216]/60">{{ group.length }}点</span>
+            <span class="text-xl">{{ openCategories[catName] ? '▲' : '▼' }}</span>
+          </button>
+
+          <div v-if="openCategories[catName]" class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
+            <div v-for="({ product, index }) in group" :key="index"
+                 class="bg-white bruna-border rounded-2xl overflow-hidden bruna-shadow flex flex-col justify-between transition-all duration-200"
+                 :class="[getCardBgClass(index), product.stock === 0 ? 'opacity-70' : '']">
 
 
           <div class="relative bg-white bruna-border-b h-72 flex items-center justify-center overflow-hidden select-none cursor-grab active:cursor-grabbing"
@@ -260,6 +270,9 @@
                   +
                 </button>
               </div>
+            </div>
+          </div>
+
             </div>
           </div>
 
@@ -512,6 +525,22 @@
 
         const dragStartX = ref(0);
 
+        const openCategories = ref({});
+
+        const groupedProducts = computed(() => {
+          const groups = {};
+          products.value.forEach((product, index) => {
+            const cat = product.category || '未分類';
+            if (!groups[cat]) groups[cat] = [];
+            groups[cat].push({ product, index });
+          });
+          return groups;
+        });
+
+        const toggleCategory = (catName) => {
+          openCategories.value[catName] = !openCategories.value[catName];
+        };
+
         const demoProducts = [
           {
             title: "デモ商品A: テイクオン・おうちのクッション",
@@ -605,6 +634,9 @@
             if (data.status === "success" && data.products) {
               products.value = data.products;
               resetCart();
+              const cats = {};
+              data.products.forEach(p => { cats[p.category || '未分類'] = true; });
+              openCategories.value = cats;
             } else {
               throw new Error(data.message || "スプレッドシートの商品データの展開に失敗しました。");
             }
@@ -957,6 +989,10 @@
           onMouseDown,
           onMouseUp,
           submitPreOrder,
+
+          openCategories,
+          groupedProducts,
+          toggleCategory,
 
 
           hasBody,
