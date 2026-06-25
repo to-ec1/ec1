@@ -153,15 +153,15 @@
 
           <button @click="toggleCategory(catName)"
                   :style="getCategoryStyle(catName)"
-                  class="w-full flex items-center justify-between rounded-2xl px-5 py-3 font-black bruna-shadow-sm bruna-shadow-active transition-all duration-150"
+                  class="w-full flex items-center justify-between rounded-2xl px-4 py-3 font-black bruna-shadow-sm bruna-shadow-active transition-all duration-150"
                   style="min-height: 80px; border: 2px solid #3B2216;">
-            <!-- カテゴリー名 -->
-            <span class="flex-shrink-0 text-2xl leading-tight">{{ catName || '未分類' }}</span>
-            <!-- 先頭3商品のサムネイル -->
-            <span class="flex items-center gap-2 mx-3 flex-grow justify-center">
-              <template v-for="({ product: p }, i) in group.slice(0, 3)" :key="i">
-                <img v-if="p.images && p.images.length > 0 && p.images[0]"
-                     :src="p.images[0]"
+            <!-- カテゴリー名：6文字超は改行 -->
+            <span class="flex-shrink-0 text-2xl leading-tight text-left" style="max-width: 5.5em; word-break: break-all;">{{ catName || '未分類' }}</span>
+            <!-- 先頭1商品のサムネイルのみ -->
+            <span class="flex items-center mx-2 flex-shrink-0">
+              <template v-if="group[0]">
+                <img v-if="group[0].product.images && group[0].product.images.length > 0 && group[0].product.images[0]"
+                     :src="group[0].product.images[0]"
                      referrerpolicy="no-referrer"
                      class="object-cover rounded-lg bg-white/50 flex-shrink-0"
                      style="width: 64px; height: 64px; border: 1.5px solid #3B2216;"
